@@ -67,6 +67,75 @@ class PatentsConnector(BaseConnector):
                 "years_to_expiry": 17
             }
         ],
+        "tiotropium": [
+            {
+                "patent_id": "US8354549",
+                "patent_number": "8354549",
+                "patent_title": "Tiotropium Bromide Inhalation Powder",
+                "patent_date": "2013-01-15",
+                "expiry_date": "2023-01-15",
+                "status": "EXPIRED",
+                "patent_type": "DRUG_PRODUCT",
+                "assignees": [{"assignee_organization": "Boehringer Ingelheim"}],
+                "claims_summary": "Original Spiriva formulation - now expired creating generic opportunity",
+                "fto_status": "CLEAR",
+                "years_to_expiry": -1
+            },
+            {
+                "patent_id": "US9737482",
+                "patent_number": "9737482",
+                "patent_title": "Tiotropium/Olodaterol Fixed-Dose Combination Inhaler",
+                "patent_date": "2017-08-22",
+                "expiry_date": "2035-08-22",
+                "status": "ACTIVE",
+                "patent_type": "DRUG_PRODUCT",
+                "assignees": [{"assignee_organization": "Boehringer Ingelheim"}],
+                "claims_summary": "Dual bronchodilator combination formulation",
+                "fto_status": "WARNING",
+                "years_to_expiry": 10
+            },
+            {
+                "patent_id": "US10456789",
+                "patent_number": "10456789",
+                "patent_title": "Tiotropium Respimat Inhaler Device",
+                "patent_date": "2019-10-29",
+                "expiry_date": "2026-12-31",
+                "status": "ACTIVE",
+                "patent_type": "DEVICE",
+                "assignees": [{"assignee_organization": "Boehringer Ingelheim"}],
+                "claims_summary": "Soft mist inhaler delivery technology",
+                "fto_status": "REVIEW_REQUIRED",
+                "years_to_expiry": 2
+            },
+            {
+                "patent_id": "US11123456",
+                "patent_number": "11123456",
+                "patent_title": "Generic Tiotropium Dry Powder Inhaler Formulation",
+                "patent_date": "2021-06-15",
+                "expiry_date": "2041-06-15",
+                "status": "ACTIVE",
+                "patent_type": "FORMULATION",
+                "assignees": [{"assignee_organization": "Cipla Limited"}],
+                "claims_summary": "Novel excipient blend for improved stability and dispersibility",
+                "fto_status": "CLEAR",
+                "years_to_expiry": 16
+            }
+        ],
+        "respiratory": [
+            {
+                "patent_id": "US8765432",
+                "patent_number": "8765432",
+                "patent_title": "LAMA/LABA Fixed-Dose Combination for Inhalation",
+                "patent_date": "2014-07-01",
+                "expiry_date": "2026-07-01",
+                "status": "ACTIVE",
+                "patent_type": "DRUG_PRODUCT",
+                "assignees": [{"assignee_organization": "Boehringer Ingelheim"}],
+                "claims_summary": "Tiotropium/olodaterol combination inhaler formulation",
+                "fto_status": "WARNING",
+                "years_to_expiry": 2
+            }
+        ],
         "copd": [
             {
                 "patent_id": "US8765432",
@@ -140,30 +209,67 @@ class PatentsConnector(BaseConnector):
         query_lower = query.lower()
         patents = []
         
-        for key, data in self.MOCK_DATA.items():
+        # Improved matching - check for molecule AND therapy area
+        matched_keys = []
+        for key in self.MOCK_DATA.keys():
             if key in query_lower:
-                patents.extend(data)
+                matched_keys.append(key)
         
-        # If no match, return synthetic placeholder patent
+        # Combine matches and remove duplicates
+        if matched_keys:
+            for key in matched_keys:
+                patents.extend(self.MOCK_DATA[key])
+            # Remove duplicates based on patent number
+            seen_numbers = set()
+            unique_patents = []
+            for patent in patents:
+                patent_num = patent.get("patent_number")
+                if patent_num and patent_num not in seen_numbers:
+                    seen_numbers.add(patent_num)
+                    unique_patents.append(patent)
+            patents = unique_patents
+        
+        # If no match, try molecule parameter and therapy area
         if not patents:
-            words = [w.capitalize() for w in query.split() if len(w) > 3]
-            molecule_hint = words[0] if words else "Unknown"
+            molecule_lower = kwargs.get("molecule", "").lower()
+            therapy_area = kwargs.get("therapy_area", "").lower()
             
-            patents = [
-                {
-                    "patent_id": "US00000000",
-                    "patent_number": "00000000",
-                    "patent_title": f"{molecule_hint} Pharmaceutical Composition",
-                    "patent_date": "2020-01-01",
-                    "expiry_date": "2040-01-01",
-                    "status": "ACTIVE",
-                    "patent_type": "FORMULATION",
-                    "assignees": [{"assignee_organization": "Various"}],
-                    "claims_summary": f"Generic formulation claims for {molecule_hint}",
-                    "fto_status": "REVIEW_REQUIRED",
-                    "years_to_expiry": 15
-                }
-            ]
+            for key, data in self.MOCK_DATA.items():
+                if key in molecule_lower or key in query_lower:
+                    patents.extend(data)
+                    break
+        
+        # Therapy area fallback mapping
+        if not patents:
+            therapy_map = {
+                "aging": "metformin",
+                "anti-aging": "metformin",
+                "longevity": "metformin",
+                "respiratory": "tiotropium",
+                "copd": "tiotropium",
+            }
+            
+            for therapy_keyword, fallback_key in therapy_map.items():
+                if therapy_keyword in therapy_area or therapy_keyword in query_lower:
+                    if fallback_key in self.MOCK_DATA:
+                        patents.extend(self.MOCK_DATA[fallback_key])
+                        break
+        
+        # If no match, return EMPTY with message
+        if not patents:
+            return {
+                "success": True,
+                "query": query,
+                "total_patents": 0,
+                "patents": [],
+                "summary": {
+                    "expiring_within_3_years": 0,
+                    "fto_concerns": 0,
+                    "patent_types": []
+                },
+                "message": "No patent data available for this query in mock database. In production, this would query USPTO PatentsView API.",
+                "provenance": self.get_provenance()
+            }
         
         # Calculate summary stats
         expiring_soon = [p for p in patents if p.get("years_to_expiry", 99) <= 3]

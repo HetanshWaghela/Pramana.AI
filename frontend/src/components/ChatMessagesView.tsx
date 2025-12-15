@@ -1,7 +1,7 @@
 import type React from 'react';
 import type { Message } from '@langchain/langgraph-sdk';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Copy, CopyCheck, Sparkles } from 'lucide-react';
+import { Copy, CopyCheck, Sparkles, Download, BarChart3 } from 'lucide-react';
 import { InputForm } from '@/components/InputForm';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -20,6 +20,7 @@ import {
 } from '@/types/messages';
 import { ToolCall } from '@/types/tools';
 import { AgentId } from '@/types/agents';
+import chatService from '@/lib/chatService';
 
 // Group messages to combine AI responses with their tool calls and results
 interface MessageGroup {
@@ -454,6 +455,8 @@ interface ChatMessagesViewProps {
   historicalActivities: Record<string, ProcessedEvent[]>;
   selectedAgentId: string;
   onAgentChange: (agentId: string) => void;
+  currentChatId?: string;
+  onExportPdf?: () => void;
 }
 
 export function ChatMessagesView({
@@ -466,8 +469,13 @@ export function ChatMessagesView({
   historicalActivities,
   selectedAgentId,
   onAgentChange,
+  currentChatId,
+  onExportPdf,
 }: ChatMessagesViewProps) {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [showGraphs, setShowGraphs] = useState(false);
+  const [graphs, setGraphs] = useState<Record<string, string> | null>(null);
+  const [loadingGraphs, setLoadingGraphs] = useState(false);
 
   const handleCopy = async (text: string, messageId: string) => {
     try {
@@ -479,11 +487,109 @@ export function ChatMessagesView({
     }
   };
 
+  const handleViewGraphs = async () => {
+    if (!currentChatId) return;
+    
+    setLoadingGraphs(true);
+    try {
+      const result = await chatService.getChatInsightGraphs(currentChatId);
+      setGraphs(result.graphs);
+      setShowGraphs(true);
+    } catch (error) {
+      console.error('Failed to load graphs:', error);
+      alert('Failed to load insight graphs. Please try again.');
+    } finally {
+      setLoadingGraphs(false);
+    }
+  };
+
+  const downloadGraph = (graphName: string, base64Data: string) => {
+    const link = document.createElement('a');
+    link.href = `data:image/png;base64,${base64Data}`;
+    link.download = `${graphName}_${currentChatId?.slice(0, 8)}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Group messages to combine related AI responses and tool calls
   const messageGroups = groupMessages(messages);
 
   return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden relative">
+      {/* Action buttons - only show if we have messages and chatId */}
+      {messages.length > 0 && currentChatId && (
+        <div className="absolute top-4 right-4 z-10 flex gap-2">
+          <Button
+            onClick={handleViewGraphs}
+            variant="outline"
+            size="sm"
+            disabled={loadingGraphs}
+            className="bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            title="View insight graphs"
+          >
+            <BarChart3 className="h-4 w-4 mr-2" />
+            {loadingGraphs ? 'Loading...' : 'View Graphs'}
+          </Button>
+          {onExportPdf && (
+            <Button
+              onClick={onExportPdf}
+              variant="outline"
+              size="sm"
+              className="bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+              title="Export chat to PDF"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export PDF
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Graphs Modal/Display */}
+      {showGraphs && graphs && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowGraphs(false)}>
+          <div className="bg-white rounded-lg border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-6xl max-h-[90vh] overflow-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Insight Graphs</h2>
+              <Button
+                onClick={() => setShowGraphs(false)}
+                variant="outline"
+                size="sm"
+                className="border-2 border-black"
+              >
+                Close
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(graphs).map(([graphName, base64Data]) => (
+                <div key={graphName} className="border-2 border-black rounded-lg p-4 bg-gray-50">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-semibold capitalize">
+                      {graphName.replace(/_/g, ' ')}
+                    </h3>
+                    <Button
+                      onClick={() => downloadGraph(graphName, base64Data)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8"
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <img
+                    src={`data:image/png;base64,${base64Data}`}
+                    alt={graphName}
+                    className="w-full h-auto rounded border border-gray-300"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <ScrollArea className="flex-1 min-h-0 overflow-auto" ref={scrollAreaRef}>
         <div className="p-4 md:p-6 space-y-2 max-w-4xl mx-auto pt-8 pb-24">
           {messageGroups.map((group, index) => {

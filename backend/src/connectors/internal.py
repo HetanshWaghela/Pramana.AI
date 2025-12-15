@@ -6,7 +6,11 @@ from connectors.base import BaseConnector
 
 
 class InternalDocsConnector(BaseConnector):
-    """Mock connector for internal company documents and knowledge base."""
+    """Mock connector for internal company documents and knowledge base.
+    
+    **IMPORTANT: This data is NOT real-time. It represents simulated internal
+    documents and historical research for demonstration purposes only.**
+    """
     
     MOCK_DATA = {
         "metformin": [
@@ -46,7 +50,69 @@ class InternalDocsConnector(BaseConnector):
                 ]
             }
         ],
-        "copd": [
+        "tiotropium": [
+            {
+                "document_id": "INT-2024-042",
+                "title": "Tiotropium Generic Strategy: Post-Patent Opportunity Analysis",
+                "document_type": "STRATEGY_DECK",
+                "created_date": "2024-11-10",
+                "author": "Generic Products Division",
+                "relevance_score": 0.96,
+                "key_excerpts": [
+                    "Spiriva patent expiry in 2023 opened $6.8B global market to generics.",
+                    "Indian manufacturers well-positioned with established DPI capabilities.",
+                    "Global opportunity with 384M COPD patients worldwide, only 35% diagnosed.",
+                    "Key differentiator: Device design and patient-friendly features."
+                ],
+                "recommendations": [
+                    "Develop improved DPI device with dose counter and ease-of-use features",
+                    "Target emerging markets with affordable pricing strategy",
+                    "Pursue 505(j) ANDA for US market entry",
+                    "Consider Tiotropium/Olodaterol combination for differentiation"
+                ]
+            },
+            {
+                "document_id": "INT-2024-055",
+                "title": "COPD Device Innovation Gaps",
+                "document_type": "R&D_INSIGHT",
+                "created_date": "2024-12-01",
+                "author": "R&D Innovation Lab",
+                "relevance_score": 0.89,
+                "key_excerpts": [
+                    "Current DPIs require high inspiratory flow - problematic for severe COPD patients.",
+                    "Patient adherence drops 45% with complex multi-step devices.",
+                    "Opportunity: Breath-activated, single-step inhaler design.",
+                    "Regulatory pathway: 505(b)(2) with device superiority claims."
+                ],
+                "recommendations": [
+                    "Invest in breath-actuated DPI technology development",
+                    "Conduct human factors studies for regulatory submission",
+                    "Partner with device engineering firms for rapid prototyping",
+                    "Target premium segment willing to pay for better experience"
+                ]
+            },
+            {
+                "document_id": "INT-2024-067",
+                "title": "Global COPD Market Segmentation Study",
+                "document_type": "MARKET_RESEARCH",
+                "created_date": "2024-10-20",
+                "author": "Market Intelligence",
+                "relevance_score": 0.84,
+                "key_excerpts": [
+                    "LAMA monotherapy declining as LAMA/LABA combinations gain preference.",
+                    "Tiotropium remains gold standard for COPD maintenance therapy.",
+                    "Generic price erosion creates volume opportunities in price-sensitive markets.",
+                    "Respimat vs Handihaler: SMI technology commands 25% price premium."
+                ],
+                "recommendations": [
+                    "Position generic tiotropium as cost-effective maintenance option",
+                    "Develop combination products for treatment-naive severe COPD",
+                    "Emphasize clinical equivalence and quality in marketing",
+                    "Explore telehealth integration for patient monitoring"
+                ]
+            }
+        ],
+        "respiratory": [
             {
                 "document_id": "INT-2024-008",
                 "title": "India Respiratory Market Entry Analysis",
@@ -126,7 +192,7 @@ class InternalDocsConnector(BaseConnector):
         
         Args:
             query: Search query
-            **kwargs: Optional filters (document_type, date_range)
+            **kwargs: Optional filters (document_type, date_range, molecule, therapy_area)
             
         Returns:
             Internal document insights with excerpts
@@ -134,37 +200,43 @@ class InternalDocsConnector(BaseConnector):
         self.last_query_time = datetime.utcnow()
         
         query_lower = query.lower()
+        molecule = kwargs.get("molecule", "").lower()
+        therapy_area = kwargs.get("therapy_area", "").lower()
         documents = []
         
+        # Try direct matches
         for key, data in self.MOCK_DATA.items():
-            if key in query_lower:
+            if key in query_lower or key in molecule or key in therapy_area:
                 documents.extend(data)
+                break
         
-        # If no match, return synthetic placeholder document
+        # Therapy area fallback mapping
         if not documents:
-            words = [w.capitalize() for w in query.split() if len(w) > 3]
-            topic_hint = " ".join(words[:2]) if words else "General Topic"
+            therapy_map = {
+                "aging": "metformin",
+                "anti-aging": "metformin",
+                "longevity": "metformin",
+                "respiratory": "tiotropium",
+                "copd": "tiotropium",
+            }
             
-            documents = [
-                {
-                    "document_id": "INT-SYNTH-001",
-                    "title": f"General Market Analysis: {topic_hint}",
-                    "document_type": "STRATEGY_DECK",
-                    "created_date": "2024-01-01",
-                    "author": "Strategy Team",
-                    "relevance_score": 0.50,
-                    "key_excerpts": [
-                        f"This is a placeholder analysis for {topic_hint}.",
-                        "Further research recommended to understand market dynamics.",
-                        "Consider engaging specialized consultants for detailed insights."
-                    ],
-                    "recommendations": [
-                        "Conduct detailed market research",
-                        "Engage with key opinion leaders",
-                        "Review competitive landscape"
-                    ]
-                }
-            ]
+            for therapy_keyword, fallback_key in therapy_map.items():
+                if therapy_keyword in therapy_area or therapy_keyword in query_lower:
+                    if fallback_key in self.MOCK_DATA:
+                        documents.extend(self.MOCK_DATA[fallback_key])
+                        break
+        
+        # If no match, return EMPTY with message
+        if not documents:
+            return {
+                "success": True,
+                "query": query,
+                "total_documents": 0,
+                "documents": [],
+                "internal_score": 0,
+                "message": "No internal documents available for this query in mock database. In production, this would query your internal knowledge base.",
+                "provenance": self.get_provenance()
+            }
         
         # Sort by relevance score
         documents.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
@@ -177,4 +249,15 @@ class InternalDocsConnector(BaseConnector):
             "internal_score": max([d.get("relevance_score", 0) for d in documents]) if documents else 0,
             "provenance": self.get_provenance()
         }
+
+    def get_provenance(self) -> dict:
+        """Return data source metadata with non-real-time disclaimer."""
+        base_prov = super().get_provenance()
+        base_prov.update({
+            "source_type": "Internal Documents (SIMULATED)",
+            "data_currency": "NOT REAL-TIME",
+            "disclaimer": "Simulated internal documents for demonstration. Not actual company data.",
+            "document_date_range": "2024-01-01 to 2024-12-01",
+        })
+        return base_prov
 

@@ -103,7 +103,7 @@ class WebSearchConnector(BaseConnector):
         
         Args:
             query: Search query
-            **kwargs: Optional filters (source_type, min_credibility)
+            **kwargs: Optional filters (source_type, min_credibility, molecule, therapy_area)
             
         Returns:
             Web search results with credibility scoring
@@ -111,37 +111,43 @@ class WebSearchConnector(BaseConnector):
         self.last_query_time = datetime.utcnow()
         
         query_lower = query.lower()
+        molecule = kwargs.get("molecule", "").lower()
+        therapy_area = kwargs.get("therapy_area", "").lower()
         results = []
         
+        # Try direct matches
         for key, data in self.MOCK_DATA.items():
-            if key in query_lower:
+            if key in query_lower or key in molecule or key in therapy_area:
                 results.extend(data)
+                break
         
-        # If no match, return synthetic placeholder results
+        # Therapy area fallback mapping
         if not results:
-            words = [w.capitalize() for w in query.split() if len(w) > 3]
-            topic_hint = " ".join(words[:3]) if words else "General Topic"
+            therapy_map = {
+                "aging": "metformin",
+                "anti-aging": "metformin",
+                "longevity": "metformin",
+                "respiratory": "respiratory",
+                "copd": "copd",
+            }
             
-            results = [
-                {
-                    "title": f"Research Overview: {topic_hint}",
-                    "url": f"https://example.com/research/{'-'.join(words[:2]).lower() if words else 'general'}",
-                    "snippet": f"General research overview for {topic_hint}. Further investigation recommended.",
-                    "source": "Research Database",
-                    "credibility_score": 0.60,
-                    "published_date": "2024-01-01",
-                    "source_type": "GENERAL"
-                },
-                {
-                    "title": f"Market Analysis: {topic_hint}",
-                    "url": f"https://example.com/market/{'-'.join(words[:2]).lower() if words else 'general'}",
-                    "snippet": f"Market analysis for {topic_hint}. Consult specialized sources for detailed data.",
-                    "source": "Market Research",
-                    "credibility_score": 0.55,
-                    "published_date": "2024-01-01",
-                    "source_type": "MARKET_RESEARCH"
-                }
-            ]
+            for therapy_keyword, fallback_key in therapy_map.items():
+                if therapy_keyword in therapy_area or therapy_keyword in query_lower:
+                    if fallback_key in self.MOCK_DATA:
+                        results.extend(self.MOCK_DATA[fallback_key])
+                        break
+        
+        # If still no match, return EMPTY with message
+        if not results:
+            return {
+                "success": True,
+                "query": query,
+                "total_results": 0,
+                "results": [],
+                "avg_credibility": 0,
+                "message": "No web search results available for this query in mock database. In production, this would use SerpAPI or similar.",
+                "provenance": self.get_provenance()
+            }
         
         # Sort by credibility
         results.sort(key=lambda x: x.get("credibility_score", 0), reverse=True)
