@@ -23,7 +23,7 @@
 | Feature | Description |
 |---------|-------------|
 | 🧬 **Biomedical Focus** | Purpose-built for drug discovery and clinical research workflows |
-| 🤖 **4 Specialized Agents** | Deep Researcher, Chatbot, Math Solver, and MCP Agent |
+| 🤖 **5 Specialized Agents** | Portfolio Strategist, Deep Researcher, Chatbot, Math Solver, MCP Agent |
 | ⚡ **Groq-Powered** | Lightning-fast inference with LLaMA 3.3 70B models |
 | 🔌 **MCP Integration** | Model Context Protocol for extensible tool ecosystem |
 | 🎨 **Beautiful UI** | Neo-brutalist landing page with Framer Motion animations |
@@ -84,13 +84,50 @@ make dev
 | URL | Description |
 |-----|-------------|
 | `http://localhost:5173/` | 🎨 Landing Page |
-| `http://localhost:5173/app` | 💬 Chatbot Application |
+| `http://localhost:5173/chat` | 💬 Chat Application (with sidebar) |
+| `http://localhost:5173/login` | 🔐 Login Page |
+| `http://localhost:5173/register` | 📝 Register Page |
 | `http://localhost:2024` | 🔧 LangGraph API |
 | `http://localhost:2024/docs` | 📚 API Documentation |
 
 ---
 
 ## 🤖 AI Agents
+
+### 💼 Portfolio Strategist (Default)
+**AI-powered pharmaceutical innovation discovery with multi-source evidence synthesis**
+
+- Clarifies scope: molecule, therapy area, region, population
+- Dispatches 6 parallel workers: IQVIA, Trials, Patents, EXIM, Internal, Web
+- Applies 7 decision heuristics to score opportunities
+- Generates compelling innovation stories with evidence-backed recommendations
+
+```mermaid
+flowchart LR
+    A[User Query] --> B[Clarify Scope]
+    B --> C[Dispatch Workers]
+    C --> D1[IQVIA] & D2[Trials] & D3[Patents] & D4[EXIM] & D5[Internal] & D6[Web]
+    D1 & D2 & D3 & D4 & D5 & D6 --> E[Synthesize Evidence]
+    E --> F[Generate Story]
+    F --> G[Portfolio Report]
+```
+
+**Heuristic Signals:**
+- `HIGH_WHITESPACE` - Strong unmet need with few active trials
+- `PATENT_WINDOW_OPEN` - Key patents expiring soon
+- `FRAGMENTED_MARKET` - Low concentration, entry opportunity
+- `LOCAL_MFG_OPPORTUNITY` - Reduce import dependency
+- `FTO_WARNING` - Freedom to operate concerns
+
+**Demo Scenarios:**
+| Scenario | Opportunity Score | Key Signals |
+|----------|------------------|-------------|
+| Metformin Anti-Aging (US) | 87/100 | HIGH_WHITESPACE, PATENT_WINDOW_OPEN |
+| COPD Respiratory (India) | 85/100 | HIGH_WHITESPACE, FRAGMENTED_MARKET |
+
+> **Note:** Uses mock data connectors for demonstration. Replace with real APIs in production.
+
+---
 
 ### 🔍 Deep Researcher
 **Advanced web research with iterative refinement**

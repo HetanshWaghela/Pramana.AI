@@ -4,6 +4,7 @@
  */
 
 export enum AgentId {
+  PORTFOLIO_STRATEGIST = 'portfolio_strategist',
   DEEP_RESEARCHER = 'deep_researcher',
   CHATBOT = 'chatbot',
   MATH_AGENT = 'math_agent',
@@ -20,6 +21,21 @@ export interface Agent {
 }
 
 export const AVAILABLE_AGENTS: Agent[] = [
+  {
+    id: AgentId.PORTFOLIO_STRATEGIST,
+    name: 'Portfolio Strategist',
+    description: 'AI-powered pharma innovation discovery with multi-source evidence synthesis',
+    icon: 'briefcase',
+    capabilities: [
+      'Market Intelligence (IQVIA)',
+      'Clinical Trials Analysis',
+      'Patent Landscape',
+      'Import/Export Feasibility',
+      'Innovation Story Generation',
+      'Decision Heuristics',
+    ],
+    showActivityTimeline: true,
+  },
   {
     id: AgentId.DEEP_RESEARCHER,
     name: 'Deep Researcher',
@@ -72,4 +88,5 @@ export const AVAILABLE_AGENTS: Agent[] = [
   },
 ];
 
-export const DEFAULT_AGENT = AgentId.CHATBOT;
+export const DEFAULT_AGENT = AgentId.PORTFOLIO_STRATEGIST;
+

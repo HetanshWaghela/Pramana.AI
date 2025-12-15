@@ -138,6 +138,64 @@ export const ChatApp: React.FC = () => {
                     };
                     hasFinalizeEventOccurredRef.current = true;
                 }
+            } else if (selectedAgentId === AgentId.PORTFOLIO_STRATEGIST) {
+                // Portfolio Strategist agent events
+                if ('clarify_scope' in event) {
+                    const scope = event.clarify_scope as { molecule?: string; therapy_area?: string; region?: string };
+                    processedEvent = {
+                        title: 'Scope Clarification',
+                        data: `Analyzing: ${scope.molecule || 'Unknown'} / ${scope.therapy_area || 'General'} / ${scope.region || 'Global'}`,
+                    };
+                } else if ('iqvia_worker' in event) {
+                    processedEvent = {
+                        title: 'IQVIA Market Analysis',
+                        data: 'Gathering market intelligence data...',
+                    };
+                } else if ('trials_worker' in event) {
+                    processedEvent = {
+                        title: 'Clinical Trials Search',
+                        data: 'Searching clinical trials database...',
+                    };
+                } else if ('patents_worker' in event) {
+                    processedEvent = {
+                        title: 'Patent Landscape',
+                        data: 'Analyzing patent landscape...',
+                    };
+                } else if ('exim_worker' in event) {
+                    processedEvent = {
+                        title: 'EXIM Analysis',
+                        data: 'Analyzing import/export data...',
+                    };
+                } else if ('internal_worker' in event) {
+                    processedEvent = {
+                        title: 'Internal Knowledge',
+                        data: 'Searching internal documents...',
+                    };
+                } else if ('web_worker' in event) {
+                    processedEvent = {
+                        title: 'Web Intelligence',
+                        data: 'Gathering web references...',
+                    };
+                } else if ('synthesize_evidence' in event) {
+                    const synthesis = event.synthesize_evidence as { opportunity_score?: number };
+                    processedEvent = {
+                        title: 'Evidence Synthesis',
+                        data: synthesis.opportunity_score
+                            ? `Opportunity score: ${synthesis.opportunity_score}/100`
+                            : 'Applying decision heuristics...',
+                    };
+                } else if ('generate_story' in event) {
+                    processedEvent = {
+                        title: 'Innovation Story',
+                        data: 'Generating differentiated product concept...',
+                    };
+                } else if ('finalize_response' in event) {
+                    processedEvent = {
+                        title: 'Report Generation',
+                        data: 'Creating portfolio intelligence report...',
+                    };
+                    hasFinalizeEventOccurredRef.current = true;
+                }
             }
 
             // Handle tool call chunks for all agents
