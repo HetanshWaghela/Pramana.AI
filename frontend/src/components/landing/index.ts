@@ -1,0 +1,10 @@
+export { LandingPage } from './LandingPage';
+export { Navigation } from './Navigation';
+export { HeroSection } from './HeroSection';
+export { AppMockup } from './AppMockup';
+export { Features } from './Features';
+export { SaiSection } from './SaiSection';
+export { Portfolio } from './Portfolio';
+export { Comparison } from './Comparison';
+export { CTA } from './CTA';
+export { Footer } from './Footer';

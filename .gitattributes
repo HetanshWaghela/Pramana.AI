@@ -1,0 +1,55 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# Pramana.ai - Git Attributes
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Auto detect text files and normalize line endings
+* text=auto
+
+# Source code
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+
+# Shell scripts (Unix)
+*.sh text eol=lf
+
+# Batch files (Windows)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Config files
+.env* text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+Makefile text eol=lf
+Dockerfile text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mp4 binary
+*.svg binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Lock files
+package-lock.json text eol=lf -diff
+uv.lock text eol=lf -diff
+
+# Linguist overrides for GitHub
+*.tsx linguist-language=TypeScript
+*.jsx linguist-language=JavaScript
