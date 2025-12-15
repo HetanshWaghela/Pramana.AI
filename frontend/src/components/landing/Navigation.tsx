@@ -73,7 +73,7 @@ export const Navigation: React.FC = () => {
                         transition={{ duration: 0.2 }}
                     >
                         <Link
-                            to="/app"
+                            to="/chat"
                             className="bg-black text-white px-6 py-2.5 rounded-full text-sm font-bold border-3 border-black inline-block"
                         >
                             Get Started
