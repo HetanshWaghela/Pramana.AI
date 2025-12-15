@@ -86,7 +86,84 @@ class ClinicalTrialsConnector(BaseConnector):
                 }
             }
         ],
-        "copd": [
+        "tiotropium": [
+            {
+                "protocolSection": {
+                    "identificationModule": {
+                        "nctId": "NCT03759535",
+                        "briefTitle": "Tiotropium Respimat in COPD Patients: Real-World Evidence",
+                        "officialTitle": "Observational Study of Tiotropium Bromide Efficacy in Indian COPD Population"
+                    },
+                    "statusModule": {
+                        "overallStatus": "COMPLETED",
+                        "startDateStruct": {"date": "2019-03-15", "type": "ACTUAL"},
+                        "primaryCompletionDateStruct": {"date": "2022-09-30", "type": "ACTUAL"}
+                    },
+                    "sponsorCollaboratorsModule": {
+                        "leadSponsor": {"name": "All India Institute of Medical Sciences", "class": "OTHER"}
+                    },
+                    "designModule": {
+                        "studyType": "OBSERVATIONAL",
+                        "phases": ["NA"],
+                        "enrollmentInfo": {"count": 1500, "type": "ACTUAL"}
+                    },
+                    "conditionsModule": {
+                        "conditions": ["COPD", "Chronic Obstructive Pulmonary Disease"]
+                    }
+                }
+            },
+            {
+                "protocolSection": {
+                    "identificationModule": {
+                        "nctId": "NCT04987234",
+                        "briefTitle": "Tiotropium/Olodaterol Fixed Combination vs Monotherapy in Severe COPD",
+                        "officialTitle": "A Phase 3 Randomized Trial Comparing Tiotropium/Olodaterol FDC with Tiotropium Alone"
+                    },
+                    "statusModule": {
+                        "overallStatus": "RECRUITING",
+                        "startDateStruct": {"date": "2024-06-01", "type": "ACTUAL"},
+                        "primaryCompletionDateStruct": {"date": "2027-06-30", "type": "ESTIMATED"}
+                    },
+                    "sponsorCollaboratorsModule": {
+                        "leadSponsor": {"name": "Boehringer Ingelheim", "class": "INDUSTRY"}
+                    },
+                    "designModule": {
+                        "studyType": "INTERVENTIONAL",
+                        "phases": ["PHASE3"],
+                        "enrollmentInfo": {"count": 2400, "type": "ESTIMATED"}
+                    },
+                    "conditionsModule": {
+                        "conditions": ["COPD", "Respiratory Insufficiency"]
+                    }
+                }
+            },
+            {
+                "protocolSection": {
+                    "identificationModule": {
+                        "nctId": "NCT05234567",
+                        "briefTitle": "Tiotropium Dry Powder Inhaler Generic Bioequivalence Study",
+                        "officialTitle": "Phase 1 Bioequivalence Study of Generic Tiotropium DPI vs Spiriva Handihaler"
+                    },
+                    "statusModule": {
+                        "overallStatus": "COMPLETED",
+                        "startDateStruct": {"date": "2023-01-10", "type": "ACTUAL"},
+                        "primaryCompletionDateStruct": {"date": "2023-08-30", "type": "ACTUAL"}
+                    },
+                    "sponsorCollaboratorsModule": {
+                        "leadSponsor": {"name": "Cipla Limited", "class": "INDUSTRY"}
+                    },
+                    "designModule": {
+                        "studyType": "INTERVENTIONAL",
+                        "phases": ["PHASE1"],
+                        "enrollmentInfo": {"count": 72, "type": "ACTUAL"}
+                    },
+                    "conditionsModule": {
+                        "conditions": ["Healthy Volunteers", "COPD Bioequivalence"]
+                    }
+                }
+            }
+        ],
+        "respiratory": [
             {
                 "protocolSection": {
                     "identificationModule": {
@@ -180,44 +257,59 @@ class ClinicalTrialsConnector(BaseConnector):
         query_lower = query.lower()
         trials = []
         
-        # Match against mock data
-        for key, data in self.MOCK_DATA.items():
+        # Improved matching logic - check for molecule AND therapy area
+        matched_keys = []
+        for key in self.MOCK_DATA.keys():
             if key in query_lower:
-                trials.extend(data)
+                matched_keys.append(key)
         
-        # If no match, return synthetic placeholder trials
+        # If we have matches, combine them (e.g., "tiotropium" + "respiratory")
+        if matched_keys:
+            for key in matched_keys:
+                trials.extend(self.MOCK_DATA[key])
+            # Remove duplicates based on NCT ID
+            seen_ids = set()
+            unique_trials = []
+            for trial in trials:
+                nct_id = trial.get("protocolSection", {}).get("identificationModule", {}).get("nctId")
+                if nct_id and nct_id not in seen_ids:
+                    seen_ids.add(nct_id)
+                    unique_trials.append(trial)
+            trials = unique_trials
+        
+        # Match against mock data with better logic
+        for key, data in self.MOCK_DATA.items():
+            if key in query_lower or key in kwargs.get("molecule", "").lower() or key in kwargs.get("therapy_area", "").lower():
+                trials.extend(data)
+                break
+        
+        # Therapy area fallback mapping
         if not trials:
-            # Extract potential molecule name from query
-            words = [w.capitalize() for w in query.split() if len(w) > 3]
-            molecule_hint = words[0] if words else "Unknown"
+            therapy_map = {
+                "aging": "metformin",
+                "anti-aging": "metformin",
+                "longevity": "metformin",
+                "respiratory": "tiotropium",
+                "copd": "tiotropium",
+            }
             
-            trials = [
-                {
-                    "protocolSection": {
-                        "identificationModule": {
-                            "nctId": "NCT00000001",
-                            "briefTitle": f"Exploratory Study of {molecule_hint}",
-                            "officialTitle": f"Phase 2 Investigation of {molecule_hint} Efficacy"
-                        },
-                        "statusModule": {
-                            "overallStatus": "RECRUITING",
-                            "startDateStruct": {"date": "2024-01-01", "type": "ESTIMATED"},
-                            "primaryCompletionDateStruct": {"date": "2027-12-31", "type": "ESTIMATED"}
-                        },
-                        "sponsorCollaboratorsModule": {
-                            "leadSponsor": {"name": "Academic Institution", "class": "OTHER"}
-                        },
-                        "designModule": {
-                            "studyType": "INTERVENTIONAL",
-                            "phases": ["PHASE2"],
-                            "enrollmentInfo": {"count": 200, "type": "ESTIMATED"}
-                        },
-                        "conditionsModule": {
-                            "conditions": ["General Condition"]
-                        }
-                    }
-                }
-            ]
+            therapy_area = kwargs.get("therapy_area", "").lower()
+            for therapy_keyword, fallback_key in therapy_map.items():
+                if therapy_keyword in therapy_area or therapy_keyword in query_lower:
+                    if fallback_key in self.MOCK_DATA:
+                        trials.extend(self.MOCK_DATA[fallback_key])
+                        break
+        
+        # If still no match, return NO PLACEHOLDER - return empty with clear message
+        if not trials:
+            return {
+                "success": True,
+                "query": query,
+                "totalCount": 0,
+                "studies": [],
+                "message": "No specific clinical trials data available for this query in mock database. In production, this would query ClinicalTrials.gov API.",
+                "provenance": self.get_provenance()
+            }
         
         return {
             "success": True,

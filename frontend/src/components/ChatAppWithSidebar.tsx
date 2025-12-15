@@ -481,6 +481,38 @@ export const ChatAppWithSidebar: React.FC = () => {
         navigate('/login');
     }, [navigate]);
 
+    const handleExportPdf = useCallback(async () => {
+        if (!currentChatId) {
+            console.error('No chat selected for export');
+            return;
+        }
+
+        try {
+            const blob = await chatService.exportChatToPdf(currentChatId);
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // Get chat title for filename
+            const chat = chatHistory.find(c => c.id === currentChatId);
+            const title = chat?.title || 'Chat';
+            const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            link.download = `${safeTitle}_${currentChatId.slice(0, 8)}.pdf`;
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            
+            // Cleanup
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Failed to export chat to PDF:', error);
+        }
+    }, [currentChatId, chatHistory]);
+
     // Combine loaded historical messages with new thread messages
     const displayMessages = useMemo(() => {
         if (isViewingHistory && loadedMessages.length > 0) {
@@ -544,6 +576,8 @@ export const ChatAppWithSidebar: React.FC = () => {
                                     historicalActivities={historicalActivities}
                                     selectedAgentId={selectedAgentId}
                                     onAgentChange={handleAgentChange}
+                                    currentChatId={currentChatId}
+                                    onExportPdf={handleExportPdf}
                                 />
                             )}
                         </div>

@@ -141,6 +141,52 @@ class ChatService {
       throw new Error('Failed to clear messages');
     }
   }
+
+  async exportChatToPdf(chatId: string): Promise<Blob> {
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}/export/pdf`, {
+      method: 'GET',
+      headers: {
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Chat not found');
+      }
+      throw new Error('Failed to export chat to PDF');
+    }
+
+    return response.blob();
+  }
+
+  async getChatInsightGraphs(chatId: string): Promise<{
+    graphs: Record<string, string>;
+    metadata: {
+      chat_id: string;
+      title: string;
+      generated_at: string;
+    };
+  }> {
+    const token = this.getToken();
+    const response = await fetch(`${API_BASE_URL}/chats/${chatId}/graphs`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error('Chat not found');
+      }
+      throw new Error('Failed to fetch insight graphs');
+    }
+
+    return response.json();
+  }
 }
 
 export const chatService = new ChatService();

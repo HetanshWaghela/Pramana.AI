@@ -35,67 +35,97 @@ Example output:
 """
 
 
-synthesis_prompt = """You are synthesizing evidence from multiple data sources to assess a pharmaceutical innovation opportunity.
+synthesis_prompt = """You are an elite pharmaceutical portfolio strategist synthesizing multi-source intelligence to identify high-value innovation opportunities.
 
-**Context:**
-- Molecule: {molecule}
-- Therapy Area: {therapy_area}
-- Region: {region}
-- Population: {population}
+**Analysis Context:**
+- **Molecule:** {molecule}
+- **Therapy Area:** {therapy_area}
+- **Target Region:** {region}
+- **Target Population:** {population}
 
-**Evidence Summary:**
+**Intelligence Summary:**
 
-**Market Data (IQVIA):**
+**Market Intelligence (IQVIA):**
 {market_summary}
 
-**Clinical Trials:**
+**Clinical Development Landscape:**
 {trials_summary}
 
-**Patent Landscape:**
+**Intellectual Property Position:**
 {patent_summary}
 
-**Import/Export (EXIM):**
+**Supply Chain & Trade Analysis (EXIM):**
 {exim_summary}
 
-**Internal Insights:**
+**Internal Strategic Insights:**
 {internal_summary}
 
-**Web Intelligence:**
+**Competitive & Regulatory Intelligence:**
 {web_summary}
 
-**Heuristic Signals:** {heuristic_signals}
+**Strategic Heuristics:** {heuristic_signals}
 
-**Opportunity Score:** {opportunity_score}/100
-**Risk Score:** {risk_score}/100
+**Quantitative Assessment:**
+- **Market Opportunity Score:** {opportunity_score}/100
+- **Risk-Adjusted Score:** {risk_score}/100
 
-Based on this evidence, create a compelling innovation story that:
-1. Identifies the key unmet need
-2. Explains the whitespace opportunity
-3. Proposes a differentiated product concept
-4. Outlines the recommended pathway (e.g., 505(b)(2))
-5. Highlights key risks and mitigations
+---
 
-Write in a strategic, executive-friendly tone suitable for a portfolio review meeting.
+**Your Task:** Synthesize this evidence into a compelling, executive-ready portfolio intelligence report that:
+
+1. **Executive Summary** (2-3 sentences): Crystallize the key opportunity and strategic rationale
+
+2. **Market Opportunity**: 
+   - Quantify the addressable market and growth trajectory
+   - Identify unmet needs and patient pain points
+   - Assess competitive intensity and whitespace
+
+3. **Innovation Strategy**:
+   - Propose a differentiated product concept (formulation, indication, positioning)
+   - Recommend optimal regulatory pathway (505(b)(2), 505(j), NDA)
+   - Outline development timeline and key milestones
+
+4. **IP & Freedom to Operate**:
+   - Summarize patent landscape and potential barriers
+   - Identify expiring patents creating entry opportunities
+   - Assess FTO risks and mitigation strategies
+
+5. **Risk Assessment & Mitigation**:
+   - Clinical/regulatory risks
+   - Commercial/market risks
+   - Operational/supply chain risks
+   - Proposed mitigation approaches
+
+6. **Strategic Recommendation**: Clear GO/NO-GO with supporting rationale
+
+**Writing Guidelines:**
+- Use data-driven, quantitative language
+- Executive-friendly tone (strategic, not academic)
+- Bold key metrics and insights
+- Bullet points for scanability
+- Include specific numbers where available
+- Flag assumptions explicitly
 """
 
 
-innovation_story_prompt = """Create a compelling pharmaceutical innovation story based on the following analysis:
+innovation_story_prompt = """Create an executive-ready pharmaceutical innovation narrative based on comprehensive multi-source analysis.
 
-**Molecule:** {molecule}
-**Therapy Area:** {therapy_area}  
-**Region:** {region}
+**Strategic Context:**
+- **Asset:** {molecule}
+- **Therapeutic Focus:** {therapy_area}  
+- **Geographic Scope:** {region}
 
-**Key Findings:**
-- Opportunity Score: {opportunity_score}/100
-- Heuristic Signals: {heuristic_signals}
+**Quantitative Intelligence:**
+- **Opportunity Score:** {opportunity_score}/100
+- **Strategic Signals:** {heuristic_signals}
 
-**Market Insights:**
+**Market Evidence:**
 {market_insights}
 
-**Clinical Landscape:**
+**Clinical Development Intelligence:**
 {trial_insights}
 
-**Patent Landscape:**
+**IP Landscape:**
 {patent_insights}
 
 Write a 2-3 paragraph innovation case that:

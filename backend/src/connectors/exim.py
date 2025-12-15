@@ -83,6 +83,45 @@ class EXIMConnector(BaseConnector):
                 "key_manufacturers": ["Cipla", "Sun Pharma"]
             }
         },
+        "tiotropium": {
+            "product": "Tiotropium Bromide API and DPI Devices",
+            "hs_code": "29339900",
+            "period": "2024",
+            "import_data": {
+                "total_volume_mt": 45,
+                "total_value_usd_mn": 125,
+                "top_origins": [
+                    {"country": "Germany", "share_pct": 48, "volume_mt": 21.6},
+                    {"country": "China", "share_pct": 28, "volume_mt": 12.6},
+                    {"country": "Italy", "share_pct": 15, "volume_mt": 6.75},
+                    {"country": "USA", "share_pct": 9, "volume_mt": 4.05}
+                ],
+                "dependency_score": 0.65,
+                "trend": "DECLINING_POST_PATENT_EXPIRY",
+                "avg_price_usd_kg": 2777.78
+            },
+            "export_data": {
+                "total_volume_mt": 18,
+                "total_value_usd_mn": 35,
+                "top_destinations": [
+                    {"country": "USA", "share_pct": 28},
+                    {"country": "EU", "share_pct": 22},
+                    {"country": "Southeast Asia", "share_pct": 20},
+                    {"country": "Latin America", "share_pct": 15}
+                ]
+            },
+            "insight_flags": [
+                "PATENT_EXPIRY_OPPORTUNITY",
+                "LOCAL_MANUFACTURING_GROWING",
+                "EXPORT_POTENTIAL_HIGH"
+            ],
+            "local_manufacturing": {
+                "capacity_mt": 25,
+                "utilization_pct": 88,
+                "key_manufacturers": ["Cipla", "Lupin", "Dr. Reddy's", "Sun Pharma"],
+                "recent_investments": "Cipla expanded DPI manufacturing capacity by 40% in 2023"
+            }
+        },
         "respiratory": {
             "product": "Respiratory APIs and Devices",
             "hs_code": "90192000",
