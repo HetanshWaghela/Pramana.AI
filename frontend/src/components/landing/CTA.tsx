@@ -13,7 +13,7 @@ export const CTA: React.FC = () => {
                 </p>
 
                 <Link
-                    to="/app"
+                    to="/chat"
                     className="bg-black text-white px-10 py-5 rounded-full text-lg font-bold border-4 border-white hover:bg-gray-800 transition-colors mb-6 inline-block"
                 >
                     Request Demo

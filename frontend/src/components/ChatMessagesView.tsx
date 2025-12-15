@@ -1,7 +1,7 @@
 import type React from 'react';
 import type { Message } from '@langchain/langgraph-sdk';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Copy, CopyCheck } from 'lucide-react';
+import { Copy, CopyCheck, Sparkles } from 'lucide-react';
 import { InputForm } from '@/components/InputForm';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -175,7 +175,7 @@ const mdComponents = {
   }: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
       className={cn(
-        'border-l-4 border-neutral-600 pl-4 italic my-3 text-sm',
+        'border-l-4 border-gray-300 pl-4 italic my-3 text-sm',
         className
       )}
       {...props}
@@ -190,7 +190,7 @@ const mdComponents = {
   }: React.HTMLAttributes<HTMLElement>) => (
     <code
       className={cn(
-        'bg-neutral-900 rounded px-1 py-0.5 font-mono text-xs',
+        'bg-gray-100 rounded px-1 py-0.5 font-mono text-xs text-gray-800',
         className
       )}
       {...props}
@@ -205,7 +205,7 @@ const mdComponents = {
   }: React.HTMLAttributes<HTMLPreElement>) => (
     <pre
       className={cn(
-        'bg-neutral-900 p-3 rounded-lg overflow-x-auto font-mono text-xs my-3',
+        'bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto font-mono text-xs my-3 border-2 border-black',
         className
       )}
       {...props}
@@ -214,7 +214,7 @@ const mdComponents = {
     </pre>
   ),
   hr: ({ className, ...props }: React.HTMLAttributes<HTMLHRElement>) => (
-    <hr className={cn('border-neutral-600 my-4', className)} {...props} />
+    <hr className={cn('border-gray-300 my-4', className)} {...props} />
   ),
   table: ({
     className,
@@ -234,7 +234,7 @@ const mdComponents = {
   }: React.ThHTMLAttributes<HTMLTableHeaderCellElement>) => (
     <th
       className={cn(
-        'border border-neutral-600 px-3 py-2 text-left font-bold',
+        'border-2 border-black px-3 py-2 text-left font-bold bg-yellow-100',
         className
       )}
       {...props}
@@ -248,7 +248,7 @@ const mdComponents = {
     ...props
   }: React.TdHTMLAttributes<HTMLTableDataCellElement>) => (
     <td
-      className={cn('border border-neutral-600 px-3 py-2', className)}
+      className={cn('border-2 border-black px-3 py-2 bg-white', className)}
       {...props}
     >
       {children}
@@ -270,7 +270,7 @@ const HumanMessageBubble: React.FC<HumanMessageBubbleProps> = ({
   const message = group.primaryMessage;
   return (
     <div
-      className={`text-white rounded-3xl break-words min-h-7 bg-neutral-700 max-w-[100%] sm:max-w-[90%] px-4 pt-3 rounded-br-lg`}
+      className={`text-gray-900 rounded-2xl break-words min-h-7 bg-yellow-300 border-2 border-black max-w-[100%] sm:max-w-[90%] px-4 pt-3 rounded-br-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-medium`}
     >
       <ReactMarkdown components={mdComponents}>
         {typeof message.content === 'string'
@@ -356,14 +356,18 @@ const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
 
   return (
     <div
-      className={`relative break-words flex flex-col group max-w-[85%] md:max-w-[80%] w-full ${
-        shouldShowActivity
-          ? 'rounded-xl p-3 shadow-sm bg-neutral-800 text-neutral-100 rounded-bl-none min-h-[56px]'
-          : ''
-      }`}
+      className={`relative break-words flex flex-col group max-w-[85%] md:max-w-[80%] w-full rounded-2xl p-5 bg-green-50 border-2 border-black text-gray-900 rounded-bl-md min-h-[56px] shadow-[4px_4px_0px_0px_rgba(74,222,128,0.6)]`}
     >
+      {/* AI Response Header */}
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-green-200">
+        <div className="w-6 h-6 bg-green-400 rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          <Sparkles className="w-3 h-3 text-black" />
+        </div>
+        <span className="text-sm font-bold text-gray-700">Pramana AI</span>
+      </div>
+
       {shouldShowActivity && (
-        <div className="mb-3 border-b border-neutral-700 pb-3 text-xs">
+        <div className="mb-3 border-b-2 border-green-200 pb-3 text-xs">
           <ActivityTimeline
             processedEvents={activityForThisBubble || []}
             isLoading={isLiveActivityForThisBubble}
@@ -419,7 +423,7 @@ const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 w-6 p-0 self-start mt-2 hover:bg-neutral-600/50 text-neutral-400 hover:text-neutral-200"
+          className="h-6 w-6 p-0 self-start mt-2 hover:bg-gray-200 text-gray-500 hover:text-gray-900"
           onClick={() =>
             handleCopy(combinedTextContent, group.primaryMessage.id!)
           }
@@ -479,17 +483,16 @@ export function ChatMessagesView({
   const messageGroups = groupMessages(messages);
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
-        <div className="p-4 md:p-6 space-y-2 max-w-4xl mx-auto pt-16 pb-4">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-y-auto" ref={scrollAreaRef}>
+        <div className="p-4 md:p-6 space-y-2 max-w-4xl mx-auto pt-4 pb-4">
           {messageGroups.map((group, index) => {
             const isLast = index === messageGroups.length - 1;
             return (
               <div key={group.id} className="space-y-3">
                 <div
-                  className={`flex items-start gap-3 ${
-                    group.type === 'human' ? 'justify-end' : ''
-                  }`}
+                  className={`flex items-start gap-3 ${group.type === 'human' ? 'justify-end' : ''
+                    }`}
                 >
                   {group.type === 'human' ? (
                     <HumanMessageBubble
@@ -528,7 +531,7 @@ export function ChatMessagesView({
 
                   if (shouldShowActivity) {
                     return (
-                      <div className="relative group max-w-[85%] md:max-w-[80%] rounded-xl p-3 shadow-sm break-words bg-neutral-800 text-neutral-100 rounded-bl-none w-full min-h-[56px]">
+                      <div className="relative group max-w-[85%] md:max-w-[80%] rounded-2xl p-4 shadow-brutal-sm break-words bg-white text-gray-900 border-2 border-black w-full min-h-[56px]">
                         <div className="text-xs">
                           <ActivityTimeline
                             processedEvents={liveActivityEvents}
@@ -540,10 +543,10 @@ export function ChatMessagesView({
                   } else {
                     return (
                       <div className="flex items-center justify-start h-full min-h-[56px]">
-                        <div className="flex justify-center items-center gap-1">
-                          <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.32s]"></div>
-                          <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.16s]"></div>
-                          <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
+                        <div className="flex justify-center items-center gap-1.5 bg-white border-2 border-black rounded-xl px-4 py-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                          <div className="w-2.5 h-2.5 bg-[#4ADE80] rounded-full animate-bounce [animation-delay:-0.32s]"></div>
+                          <div className="w-2.5 h-2.5 bg-[#FDE047] rounded-full animate-bounce [animation-delay:-0.16s]"></div>
+                          <div className="w-2.5 h-2.5 bg-[#F9A8D4] rounded-full animate-bounce"></div>
                         </div>
                       </div>
                     );
@@ -552,7 +555,7 @@ export function ChatMessagesView({
               </div>
             )}
         </div>
-      </ScrollArea>
+      </div>
       <div className="flex-shrink-0">
         <InputForm
           onSubmit={onSubmit}

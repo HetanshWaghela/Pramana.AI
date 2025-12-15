@@ -6,6 +6,7 @@
     "."
   ],
   "graphs": {
+    "portfolio_strategist": "./src/agent/portfolio/orchestrator.py:portfolio_graph",
     "deep_researcher": "./src/agent/deep_researcher.py:deep_researcher_graph",
     "chatbot": "./src/agent/chatbot_graph.py:chatbot_graph",
     "math_agent": "./src/agent/math_agent.py:math_agent_graph",

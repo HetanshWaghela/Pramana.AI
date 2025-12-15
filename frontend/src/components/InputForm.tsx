@@ -112,28 +112,30 @@ export const InputForm: React.FC<InputFormProps> = ({
   return (
     <form
       onSubmit={handleInternalSubmit}
-      className={`flex flex-col gap-2 p-3 `}
+      className={`flex flex-col gap-3 p-3`}
     >
       {/* Show selected agent indicator */}
       {selectedAgentInfo && (
-        <div className="flex items-center gap-2 text-xs text-neutral-400 px-2">
-          <Bot className="h-3 w-3" />
+        <div className="flex items-center gap-2 text-sm text-gray-600 px-2 font-medium">
+          <div className="w-5 h-5 bg-green-400 rounded-md border border-black flex items-center justify-center">
+            <Bot className="h-3 w-3 text-black" />
+          </div>
           Using {selectedAgentInfo.name}: {selectedAgentInfo.description}
         </div>
       )}
 
       <div
-        className={`flex flex-row items-center justify-between text-white rounded-3xl rounded-bl-sm ${
-          hasHistory ? 'rounded-br-sm' : ''
-        } break-words min-h-7 bg-neutral-700 px-4 pt-3 `}
+        className={`flex flex-row items-center justify-between rounded-2xl ${
+          hasHistory ? '' : 'rounded-bl-md'
+        } break-words min-h-7 bg-white border-3 border-black px-4 pt-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]`}
       >
         <Textarea
           value={internalInputValue}
           onChange={(e) => setInternalInputValue(e.target.value)}
           onKeyDown={handleInternalKeyDown}
-          placeholder="Hello world!"
-          className={`w-full text-neutral-100 placeholder-neutral-500 resize-none border-0 focus:outline-none focus:ring-0 outline-none focus-visible:ring-0 shadow-none 
-                        md:text-base  min-h-[56px] max-h-[200px]`}
+          placeholder="Ask me about biomedical research..."
+          className={`w-full text-gray-900 placeholder-gray-400 resize-none border-0 focus:outline-none focus:ring-0 outline-none focus-visible:ring-0 shadow-none bg-transparent
+                        md:text-base min-h-[56px] max-h-[200px] font-medium`}
           rows={1}
         />
         <div className="-mt-3">
@@ -142,7 +144,7 @@ export const InputForm: React.FC<InputFormProps> = ({
               type="button"
               variant="ghost"
               size="icon"
-              className="text-red-500 hover:text-red-400 hover:bg-red-500/10 p-2 cursor-pointer rounded-full transition-all duration-200"
+              className="text-red-500 hover:text-red-600 hover:bg-red-100 p-2 cursor-pointer rounded-full transition-all duration-200"
               onClick={onCancel}
             >
               <StopCircle className="h-5 w-5" />
@@ -153,8 +155,8 @@ export const InputForm: React.FC<InputFormProps> = ({
               variant="ghost"
               className={`${
                 isSubmitDisabled
-                  ? 'text-neutral-500'
-                  : 'text-blue-500 hover:text-blue-400 hover:bg-blue-500/10'
+                  ? 'text-gray-400'
+                  : 'text-black hover:text-gray-700 hover:bg-green-100'
               } p-2 cursor-pointer rounded-full transition-all duration-200 text-base`}
               disabled={isSubmitDisabled}
             >
@@ -163,25 +165,25 @@ export const InputForm: React.FC<InputFormProps> = ({
           )}
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex flex-row gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex flex-row gap-2 flex-wrap">
           {/* Only show agent selector when no conversation history */}
           {!hasHistory && (
-            <div className="flex flex-row gap-2 bg-neutral-700 border-neutral-600 text-neutral-300 focus:ring-neutral-500 rounded-xl rounded-t-sm pl-2  max-w-[100%] sm:max-w-[90%]">
-              <div className="flex flex-row items-center text-sm">
+            <div className="flex flex-row gap-2 bg-yellow-300 border-2 border-black text-gray-900 rounded-xl rounded-t-md pl-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] max-w-[100%] sm:max-w-[90%]">
+              <div className="flex flex-row items-center text-sm font-bold">
                 <Bot className="h-4 w-4 mr-2" />
                 Agent
               </div>
               <Select value={selectedAgent} onValueChange={onAgentChange}>
-                <SelectTrigger className="w-[150px] bg-transparent border-none cursor-pointer">
+                <SelectTrigger className="w-[140px] bg-transparent border-none cursor-pointer font-semibold text-gray-900">
                   <SelectValue placeholder="Agent" />
                 </SelectTrigger>
-                <SelectContent className="bg-neutral-700 border-neutral-600 text-neutral-300 cursor-pointer">
+                <SelectContent className="bg-white border-2 border-black text-gray-900 cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                   {AVAILABLE_AGENTS.map((agent) => (
                     <SelectItem
                       key={agent.id}
                       value={agent.id}
-                      className="hover:bg-neutral-600 focus:bg-neutral-600 cursor-pointer"
+                      className="hover:bg-yellow-100 focus:bg-yellow-100 cursor-pointer font-medium"
                     >
                       <div className="flex items-center">
                         {getAgentIcon(agent.icon)}
@@ -195,31 +197,31 @@ export const InputForm: React.FC<InputFormProps> = ({
           )}
           {/* Show effort selector for certain agents when no conversation history */}
           {showEffortSelector && !hasHistory && (
-            <div className="flex flex-row gap-2 bg-neutral-700 border-neutral-600 text-neutral-300 focus:ring-neutral-500 rounded-xl rounded-t-sm pl-2  max-w-[100%] sm:max-w-[90%]">
-              <div className="flex flex-row items-center text-sm">
+            <div className="flex flex-row gap-2 bg-pink-300 border-2 border-black text-gray-900 rounded-xl rounded-t-md pl-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] max-w-[100%] sm:max-w-[90%]">
+              <div className="flex flex-row items-center text-sm font-bold">
                 <Brain className="h-4 w-4 mr-2" />
                 Effort
               </div>
               <Select value={effort} onValueChange={setEffort}>
-                <SelectTrigger className="w-[120px] bg-transparent border-none cursor-pointer">
+                <SelectTrigger className="w-[110px] bg-transparent border-none cursor-pointer font-semibold text-gray-900">
                   <SelectValue placeholder="Effort" />
                 </SelectTrigger>
-                <SelectContent className="bg-neutral-700 border-neutral-600 text-neutral-300 cursor-pointer">
+                <SelectContent className="bg-white border-2 border-black text-gray-900 cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                   <SelectItem
                     value="low"
-                    className="hover:bg-neutral-600 focus:bg-neutral-600 cursor-pointer"
+                    className="hover:bg-pink-100 focus:bg-pink-100 cursor-pointer font-medium"
                   >
                     Low
                   </SelectItem>
                   <SelectItem
                     value="medium"
-                    className="hover:bg-neutral-600 focus:bg-neutral-600 cursor-pointer"
+                    className="hover:bg-pink-100 focus:bg-pink-100 cursor-pointer font-medium"
                   >
                     Medium
                   </SelectItem>
                   <SelectItem
                     value="high"
-                    className="hover:bg-neutral-600 focus:bg-neutral-600 cursor-pointer"
+                    className="hover:bg-pink-100 focus:bg-pink-100 cursor-pointer font-medium"
                   >
                     High
                   </SelectItem>
@@ -227,21 +229,21 @@ export const InputForm: React.FC<InputFormProps> = ({
               </Select>
             </div>
           )}
-          <div className="flex flex-row gap-2 bg-neutral-700 border-neutral-600 text-neutral-300 focus:ring-neutral-500 rounded-xl rounded-t-sm pl-2  max-w-[100%] sm:max-w-[90%]">
-            <div className="flex flex-row items-center text-sm ml-2">
+          <div className="flex flex-row gap-2 bg-green-400 border-2 border-black text-gray-900 rounded-xl rounded-t-md pl-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] max-w-[100%] sm:max-w-[90%]">
+            <div className="flex flex-row items-center text-sm font-bold ml-1">
               <Cpu className="h-4 w-4 mr-2" />
               Model
             </div>
             <Select value={model} onValueChange={handleModelChange}>
-              <SelectTrigger className="w-[150px] bg-transparent border-none cursor-pointer">
+              <SelectTrigger className="w-[140px] bg-transparent border-none cursor-pointer font-semibold text-gray-900">
                 <SelectValue placeholder="Model" />
               </SelectTrigger>
-              <SelectContent className="bg-neutral-700 border-neutral-600 text-neutral-300 cursor-pointer">
+              <SelectContent className="bg-white border-2 border-black text-gray-900 cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 {AVAILABLE_MODELS.map((modelInfo) => (
                   <SelectItem
                     key={modelInfo.id}
                     value={modelInfo.id}
-                    className="hover:bg-neutral-600 focus:bg-neutral-600 cursor-pointer"
+                    className="hover:bg-green-100 focus:bg-green-100 cursor-pointer font-medium"
                   >
                     <div className="flex items-center">
                       {getModelIcon(modelInfo.icon, modelInfo.iconColor)}
@@ -255,7 +257,7 @@ export const InputForm: React.FC<InputFormProps> = ({
         </div>
         {hasHistory && (
           <Button
-            className="bg-neutral-700 border-neutral-600 text-neutral-300 cursor-pointer rounded-xl rounded-t-sm pl-2 "
+            className="bg-black border-2 border-black text-white cursor-pointer rounded-xl rounded-t-md px-4 py-2 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow"
             variant="default"
             onClick={() => window.location.reload()}
           >
