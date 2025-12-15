@@ -36,20 +36,20 @@ export function ActivityTimeline({
     useState<boolean>(false);
   const getEventIcon = (title: string, index: number) => {
     if (index === 0 && isLoading && processedEvents.length === 0) {
-      return <Loader2 className="h-4 w-4 text-neutral-400 animate-spin" />;
+      return <Loader2 className="h-4 w-4 text-gray-600 animate-spin" />;
     }
     if (title.toLowerCase().includes('generating')) {
-      return <TextSearch className="h-4 w-4 text-neutral-400" />;
+      return <TextSearch className="h-4 w-4 text-green-600" />;
     } else if (title.toLowerCase().includes('thinking')) {
-      return <Loader2 className="h-4 w-4 text-neutral-400 animate-spin" />;
+      return <Loader2 className="h-4 w-4 text-yellow-600 animate-spin" />;
     } else if (title.toLowerCase().includes('reflection')) {
-      return <Brain className="h-4 w-4 text-neutral-400" />;
+      return <Brain className="h-4 w-4 text-pink-500" />;
     } else if (title.toLowerCase().includes('research')) {
-      return <Search className="h-4 w-4 text-neutral-400" />;
+      return <Search className="h-4 w-4 text-blue-600" />;
     } else if (title.toLowerCase().includes('finalizing')) {
-      return <Pen className="h-4 w-4 text-neutral-400" />;
+      return <Pen className="h-4 w-4 text-green-600" />;
     }
-    return <Activity className="h-4 w-4 text-neutral-400" />;
+    return <Activity className="h-4 w-4 text-gray-600" />;
   };
 
   useEffect(() => {
@@ -59,14 +59,14 @@ export function ActivityTimeline({
   }, [isLoading, processedEvents]);
 
   return (
-    <Card className="border-none rounded-lg bg-neutral-700 max-h-96 w-full min-w-0">
+    <Card className="border-2 border-black rounded-xl bg-[#FDE047] max-h-96 w-full min-w-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
       <CardHeader>
         <CardDescription className="flex items-center justify-between min-w-0">
           <div
-            className="flex items-center justify-start text-sm w-full cursor-pointer gap-2 text-neutral-100 min-w-0 truncate"
+            className="flex items-center justify-start text-sm w-full cursor-pointer gap-2 text-gray-900 font-bold min-w-0 truncate"
             onClick={() => setIsTimelineCollapsed(!isTimelineCollapsed)}
           >
-            Research
+            🔬 Research Activity
             {isTimelineCollapsed ? (
               <ChevronDown className="h-4 w-4 mr-2 flex-shrink-0" />
             ) : (
@@ -80,12 +80,12 @@ export function ActivityTimeline({
           <CardContent>
             {isLoading && processedEvents.length === 0 && (
               <div className="relative pl-8 pb-4 min-w-0">
-                <div className="absolute left-3 top-3.5 h-full w-0.5 bg-neutral-800" />
-                <div className="absolute left-0.5 top-2 h-5 w-5 rounded-full bg-neutral-800 flex items-center justify-center ring-4 ring-neutral-900">
-                  <Loader2 className="h-3 w-3 text-neutral-400 animate-spin" />
+                <div className="absolute left-3 top-3.5 h-full w-0.5 bg-yellow-600/30" />
+                <div className="absolute left-0.5 top-2 h-5 w-5 rounded-full bg-white flex items-center justify-center ring-2 ring-black">
+                  <Loader2 className="h-3 w-3 text-gray-700 animate-spin" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-neutral-300 font-medium truncate">
+                  <p className="text-sm text-gray-800 font-medium truncate">
                     Searching...
                   </p>
                 </div>
@@ -97,16 +97,16 @@ export function ActivityTimeline({
                   <div key={index} className="relative pl-8 pb-4 min-w-0">
                     {index < processedEvents.length - 1 ||
                     (isLoading && index === processedEvents.length - 1) ? (
-                      <div className="absolute left-3 top-3.5 h-full w-0.5 bg-neutral-600" />
+                      <div className="absolute left-3 top-3.5 h-full w-0.5 bg-yellow-600/40" />
                     ) : null}
-                    <div className="absolute left-0.5 top-2 h-6 w-6 rounded-full bg-neutral-600 flex items-center justify-center ring-4 ring-neutral-700">
+                    <div className="absolute left-0.5 top-2 h-6 w-6 rounded-full bg-white flex items-center justify-center ring-2 ring-black">
                       {getEventIcon(eventItem.title, index)}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm text-neutral-200 font-medium mb-0.5 truncate">
+                      <p className="text-sm text-gray-900 font-bold mb-0.5 truncate">
                         {eventItem.title}
                       </p>
-                      <p className="text-xs text-neutral-300 leading-relaxed break-words overflow-wrap-anywhere">
+                      <p className="text-xs text-gray-700 leading-relaxed break-words overflow-wrap-anywhere">
                         {typeof eventItem.data === 'string'
                           ? eventItem.data
                           : Array.isArray(eventItem.data)
@@ -118,11 +118,11 @@ export function ActivityTimeline({
                 ))}
                 {isLoading && processedEvents.length > 0 && (
                   <div className="relative pl-8 pb-4 min-w-0">
-                    <div className="absolute left-0.5 top-2 h-5 w-5 rounded-full bg-neutral-600 flex items-center justify-center ring-4 ring-neutral-700">
-                      <Loader2 className="h-3 w-3 text-neutral-400 animate-spin" />
+                    <div className="absolute left-0.5 top-2 h-5 w-5 rounded-full bg-white flex items-center justify-center ring-2 ring-black">
+                      <Loader2 className="h-3 w-3 text-gray-700 animate-spin" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm text-neutral-300 font-medium truncate">
+                      <p className="text-sm text-gray-800 font-medium truncate">
                         Searching...
                       </p>
                     </div>
@@ -130,10 +130,10 @@ export function ActivityTimeline({
                 )}
               </div>
             ) : !isLoading ? ( // Only show "No activity" if not loading and no events
-              <div className="flex flex-col items-center justify-center h-full text-neutral-500 pt-10 min-w-0">
+              <div className="flex flex-col items-center justify-center h-full text-gray-600 pt-10 min-w-0">
                 <Info className="h-6 w-6 mb-3 flex-shrink-0" />
-                <p className="text-sm text-center">No activity to display.</p>
-                <p className="text-xs text-neutral-600 mt-1 text-center">
+                <p className="text-sm text-center font-medium">No activity to display.</p>
+                <p className="text-xs text-gray-500 mt-1 text-center">
                   Timeline will update during processing.
                 </p>
               </div>

@@ -28,7 +28,7 @@ export const SaiSection: React.FC = () => {
                         <h3 className="text-2xl font-black text-gray-900 text-center mb-6">You Ask</h3>
 
                         <div className="bg-gray-50 rounded-2xl p-5 border-2 border-gray-200">
-                            <p className="text-gray-600 text-center italic">"Find all Phase 3 trials for lung cancer treatments approved after 2020"</p>
+                            <p className="text-gray-600 text-center italic">"What are the latest treatments for Alzheimer's disease?"</p>
                         </div>
                     </div>
 
@@ -48,25 +48,25 @@ export const SaiSection: React.FC = () => {
                                 <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
-                                <span className="text-white font-semibold">Queries multiple databases</span>
+                                <span className="text-white font-semibold">Web research with AI</span>
                             </div>
                             <div className="flex items-center space-x-3">
                                 <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
-                                <span className="text-white font-semibold">Normalizes schemas</span>
+                                <span className="text-white font-semibold">Multi-agent analysis</span>
                             </div>
                             <div className="flex items-center space-x-3">
                                 <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
-                                <span className="text-white font-semibold">Extracts citations</span>
+                                <span className="text-white font-semibold">Source citations</span>
                             </div>
                             <div className="flex items-center space-x-3">
                                 <svg className="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                 </svg>
-                                <span className="text-white font-semibold">100% Verifiable</span>
+                                <span className="text-white font-semibold">Verifiable results</span>
                             </div>
                         </div>
                     </div>
@@ -80,10 +80,10 @@ export const SaiSection: React.FC = () => {
                             </div>
                         </div>
 
-                        <h3 className="text-2xl font-black text-gray-900 text-center mb-6">Sai Answers</h3>
+                        <h3 className="text-2xl font-black text-gray-900 text-center mb-6">Pramana Answers</h3>
 
                         <div className="bg-green-50 rounded-2xl p-5 border-2 border-green-200">
-                            <p className="text-gray-800 text-center font-medium">"Found 127 trials across 23 countries. Top drug: Pembrolizumab (45 trials). Download full report with citations."</p>
+                            <p className="text-gray-800 text-center font-medium">"Current FDA-approved drugs include Lecanemab and Aducanumab targeting amyloid plaques. Research shows promising results with tau protein inhibitors. Full analysis with sources available."</p>
                         </div>
                     </div>
                 </div>

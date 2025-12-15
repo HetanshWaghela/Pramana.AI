@@ -72,7 +72,7 @@ export const HeroSection: React.FC = () => {
                                 transition={{ duration: 0.2 }}
                             >
                                 <Link
-                                    to="/app"
+                                    to="/login"
                                     className="bg-black text-white px-8 py-4 rounded-full text-base font-bold inline-flex items-center space-x-2 border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                                 >
                                     <span>Get Started</span>

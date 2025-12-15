@@ -193,7 +193,11 @@ flowchart LR
 | LangGraph | 0.2+ | Agent orchestration |
 | LangChain | 0.3+ | LLM framework |
 | Groq | Latest | LLM provider |
-| FastAPI | Latest | HTTP endpoints |
+| FastAPI | Latest | HTTP endpoints & Authentication |
+| SQLAlchemy | Latest | ORM for database |
+| SQLite | Latest | Database (default) |
+| JWT | Latest | Token-based authentication |
+| Bcrypt | Latest | Password hashing |
 | UV | Latest | Package manager |
 
 #### Infrastructure
@@ -217,11 +221,19 @@ Pharma-Agent/
 │   │   │   ├── configuration.py
 │   │   │   ├── prompts.py
 │   │   │   └── state.py
+│   │   ├── 📁 auth/            # Authentication & Database
+│   │   │   ├── routes.py       # Login/Register endpoints
+│   │   │   ├── models.py       # SQLAlchemy models
+│   │   │   ├── schemas.py      # Pydantic schemas
+│   │   │   ├── database.py     # Database connection
+│   │   │   ├── utils.py        # JWT & password hashing
+│   │   │   └── chat_routes.py  # Chat history endpoints
 │   │   ├── 📁 config/          # Configuration
 │   │   │   └── mcp_config.py
 │   │   └── 📁 tools/           # LangChain tools
 │   │       ├── calculator.py
 │   │       └── mcp_loader.py
+│   ├── pramana.db              # SQLite database
 │   ├── langgraph.json          # LangGraph configuration
 │   ├── pyproject.toml          # Python dependencies
 │   └── .env.example            # Environment template
@@ -229,6 +241,9 @@ Pharma-Agent/
 ├── 📁 frontend/                 # React frontend
 │   ├── 📁 src/
 │   │   ├── 📁 components/
+│   │   │   ├── 📁 auth/        # Authentication pages
+│   │   │   │   ├── LoginPage.tsx
+│   │   │   │   └── RegisterPage.tsx
 │   │   │   ├── 📁 landing/     # Landing page (11 components)
 │   │   │   │   ├── Navigation.tsx
 │   │   │   │   ├── HeroSection.tsx
@@ -242,14 +257,19 @@ Pharma-Agent/
 │   │   │   │   └── LandingPage.tsx
 │   │   │   ├── 📁 ui/          # Reusable UI components
 │   │   │   ├── ChatApp.tsx     # Main chat application
+│   │   │   ├── ChatAppWithSidebar.tsx
 │   │   │   ├── ChatMessagesView.tsx
+│   │   │   ├── ChatSidebar.tsx
 │   │   │   ├── InputForm.tsx
 │   │   │   ├── WelcomeScreen.tsx
 │   │   │   └── ActivityTimeline.tsx
 │   │   ├── 📁 types/           # TypeScript types
 │   │   │   ├── agents.ts
 │   │   │   └── models.ts
-│   │   ├── 📁 lib/             # Utilities
+│   │   ├── 📁 lib/             # API services & utilities
+│   │   │   ├── auth.ts         # Authentication service
+│   │   │   ├── chatService.ts  # Chat API calls
+│   │   │   └── utils.ts
 │   │   ├── 📁 utils/           # Animation configs
 │   │   ├── App.tsx             # Routing hub
 │   │   ├── main.tsx            # Entry point
@@ -262,6 +282,62 @@ Pharma-Agent/
 ├── Makefile                    # Dev commands
 └── README.md                   # This file
 ```
+
+---
+
+## 🔐 Authentication & Database
+
+### User Authentication
+The platform includes a complete authentication system with:
+
+- **JWT Token-based authentication** - Secure token generation and validation
+- **Password hashing with Bcrypt** - Industry-standard password security
+- **User registration and login** - Full user account management
+- **Protected routes** - Authorization middleware for secure endpoints
+
+### Database Schema
+
+#### Users Table
+| Field | Type | Description |
+|-------|------|-------------|
+| id | Integer | Primary key |
+| email | String | Unique email address |
+| hashed_password | String | Bcrypt hashed password |
+| created_at | DateTime | Account creation timestamp |
+
+#### Chats Table
+| Field | Type | Description |
+|-------|------|-------------|
+| id | Integer | Primary key |
+| user_id | Integer | Foreign key to Users |
+| title | String | Chat conversation title |
+| agent | String | Agent used (deep_researcher, chatbot, etc) |
+| created_at | DateTime | Chat creation timestamp |
+
+#### Messages Table
+| Field | Type | Description |
+|-------|------|-------------|
+| id | Integer | Primary key |
+| chat_id | Integer | Foreign key to Chats |
+| role | String | 'user' or 'assistant' |
+| content | Text | Message content |
+| timestamp | DateTime | Message timestamp |
+
+### API Endpoints
+
+#### Authentication
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/auth/register` | POST | Register new user account |
+| `/auth/login` | POST | Login and receive JWT token |
+
+#### Chat History
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chats/` | GET | Get all user chats (requires auth) |
+| `/chats/` | POST | Create new chat (requires auth) |
+| `/chats/{id}` | GET | Get specific chat with messages |
+| `/chats/{id}` | DELETE | Delete chat |
 
 ---
 
@@ -321,12 +397,40 @@ BRAVE_API_KEY=your_brave_api_key_here
 make dev
 
 # Option 2: Separate terminals
-# Terminal 1 - Backend
+# Terminal 1 - Backend API
+cd backend && uvicorn src.auth.routes:app --reload
+
+# Terminal 2 - LangGraph Server
 cd backend && uv run langgraph dev --no-browser
 
-# Terminal 2 - Frontend
+# Terminal 3 - Frontend
 cd frontend && npm run dev
 ```
+
+### Quick Start Guide
+
+1. **Install dependencies:**
+   ```bash
+   cd backend && pip install -e .
+   cd ../frontend && npm install
+   ```
+
+2. **Configure environment:**
+   - Create `backend/.env` with required API keys (see Configuration section)
+
+3. **Start all servers:**
+   - Backend API: `uvicorn src.auth.routes:app --reload` (port 8000)
+   - LangGraph: `uv run langgraph dev --no-browser` (port 2024)
+   - Frontend: `npm run dev` (port 5173)
+
+4. **Create account:**
+   - Navigate to http://localhost:5173
+   - Click "Register" and create your account
+   - Login with your credentials
+
+5. **Start chatting:**
+   - Select an AI agent (Deep Researcher, Chatbot, Math Agent, MCP Agent)
+   - Ask questions and explore!
 
 ### Docker Deployment
 
@@ -343,12 +447,32 @@ GROQ_API_KEY=xxx SERPAPI_API_KEY=xxx docker-compose up
 ### Production Checklist
 
 - [ ] **Environment Variables** - Secure API key management
+- [ ] **Database** - Migrate from SQLite to PostgreSQL for production
 - [ ] **Redis** - Configure for state streaming
-- [ ] **PostgreSQL** - Set up for data persistence
 - [ ] **HTTPS** - Enable secure communications
+- [ ] **JWT Secret** - Use strong secret key for token signing
+- [ ] **CORS** - Configure allowed origins
 - [ ] **LangSmith** - Connect for observability
 - [ ] **Rate Limiting** - Protect API endpoints
 - [ ] **Backups** - Database backup strategy
+
+### Troubleshooting
+
+#### Login Issues
+- Ensure backend server is running on port 8000
+- Check database exists: `backend/pramana.db`
+- Verify credentials are correct (case-sensitive)
+
+#### Database Issues
+- Database is created automatically on first run
+- Location: `backend/pramana.db`
+- To reset: delete file and restart backend
+
+#### Port Conflicts
+- Backend API: 8000
+- LangGraph: 2024
+- Frontend: 5173
+- Kill processes: `netstat -ano | findstr :<PORT>` then `taskkill /PID <PID> /F`
 
 ---
 

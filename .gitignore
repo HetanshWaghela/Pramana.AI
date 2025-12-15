@@ -204,3 +204,9 @@ backend/.langgraph_api
 .cursor
 TEST_RESULTS.md
 updation-plan.md
+
+# Test files
+test_*.py
+reset_*.py
+**/test_*.py
+**/reset_*.py

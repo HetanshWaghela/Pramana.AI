@@ -59,11 +59,11 @@ const getStatusBadge = (toolMessage?: ToolMessage) => {
 // JSON syntax highlighting for inputs/outputs
 const JsonDisplay = ({ data, title }: { data: unknown; title: string }) => (
   <div className="space-y-2">
-    <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+    <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wider">
       {title}
     </h4>
-    <div className="bg-neutral-900/50 rounded-lg p-3 border border-neutral-700/50 overflow-x-auto">
-      <pre className="text-xs overflow-x-auto text-neutral-200 font-mono leading-relaxed whitespace-pre-wrap break-words min-w-0">
+    <div className="bg-gray-50 rounded-lg p-3 border-2 border-gray-200 overflow-x-auto">
+      <pre className="text-xs overflow-x-auto text-gray-800 font-mono leading-relaxed whitespace-pre-wrap break-words min-w-0">
         <code>{JSON.stringify(data, null, 2)}</code>
       </pre>
     </div>
@@ -77,18 +77,18 @@ export function ToolMessageDisplay({
   onToggle,
 }: ToolMessageDisplayProps) {
   return (
-    <div className="border border-neutral-600/40 bg-neutral-800/30 rounded-lg overflow-hidden mt-4 mb-4 min-w-0">
+    <div className="border-2 border-black bg-white rounded-xl overflow-hidden mt-4 mb-4 min-w-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
         <CollapsibleTrigger asChild>
-          <button className="w-full px-4 py-3 hover:bg-neutral-700/20 transition-all duration-200 text-left focus:outline-none focus:bg-neutral-700/20">
+          <button className="w-full px-4 py-3 hover:bg-gray-50 transition-all duration-200 text-left focus:outline-none focus:bg-gray-50">
             <div className="flex items-center justify-between min-w-0">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className="p-1.5 rounded-md bg-neutral-700/50 flex-shrink-0">
-                    <Wrench className="h-3.5 w-3.5 text-neutral-300" />
+                  <div className="p-1.5 rounded-lg bg-[#4ADE80] border border-black flex-shrink-0">
+                    <Wrench className="h-3.5 w-3.5 text-black" />
                   </div>
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
-                    <span className="font-medium text-neutral-100 text-sm truncate">
+                    <span className="font-bold text-gray-900 text-sm truncate">
                       {toolCall.name}
                     </span>
                   </div>
@@ -100,7 +100,7 @@ export function ToolMessageDisplay({
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                 <ChevronRight
                   className={cn(
-                    'h-4 w-4 text-neutral-400 transition-transform duration-200',
+                    'h-4 w-4 text-gray-600 transition-transform duration-200',
                     isExpanded && 'rotate-90'
                   )}
                 />
@@ -113,7 +113,7 @@ export function ToolMessageDisplay({
             'data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up'
           )}
         >
-          <div className="px-4 pb-4 space-y-4 border-t border-neutral-700/30 overflow-x-auto">
+          <div className="px-4 pb-4 space-y-4 border-t-2 border-gray-200 overflow-x-auto">
             <div className="pt-4 min-w-0">
               {/* Tool inputs */}
               {Object.keys(toolCall.args).length > 0 && (
@@ -123,15 +123,15 @@ export function ToolMessageDisplay({
               {/* Tool outputs */}
               {toolMessage && (
                 <div className="space-y-2 mt-4">
-                  <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Output
                   </h4>
                   <div
                     className={cn(
-                      'rounded-lg p-3 text-sm border overflow-x-auto',
+                      'rounded-lg p-3 text-sm border-2 overflow-x-auto',
                       toolMessage.is_error
-                        ? 'bg-red-900/10 border-red-500/20 text-red-200'
-                        : 'bg-neutral-900/50 border-neutral-700/50 text-neutral-200'
+                        ? 'bg-red-50 border-red-300 text-red-800'
+                        : 'bg-gray-50 border-gray-200 text-gray-800'
                     )}
                   >
                     {typeof toolMessage.content === 'string' ? (
@@ -151,10 +151,10 @@ export function ToolMessageDisplay({
 
               {/* Show waiting message if no tool message yet */}
               {!toolMessage && (
-                <div className="text-xs text-neutral-500 italic mt-4 p-3 bg-neutral-800/20 rounded-lg border border-neutral-700/30">
+                <div className="text-xs text-gray-600 italic mt-4 p-3 bg-[#FDE047]/30 rounded-lg border-2 border-yellow-300">
                   <div className="flex items-center gap-2">
                     <Clock className="h-3 w-3 animate-pulse flex-shrink-0" />
-                    <span>Waiting for tool response...</span>
+                    <span className="font-medium">Waiting for tool response...</span>
                   </div>
                 </div>
               )}
