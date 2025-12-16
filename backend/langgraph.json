@@ -12,8 +12,5 @@
     "math_agent": "./src/agent/math_agent.py:math_agent_graph",
     "mcp_agent": "./src/agent/mcp_agent.py:mcp_agent_graph"
   },
-  "http": {
-    "app": "./src/agent/app.py:app"
-  },
   "env": ".env"
 }

@@ -21,6 +21,13 @@ import {
 import { ToolCall } from '@/types/tools';
 import { AgentId } from '@/types/agents';
 import chatService from '@/lib/chatService';
+import { 
+  OpportunityRadar, 
+  MarketGrowth, 
+  PatentTimeline, 
+  CompetitionHeatmap, 
+  Signals 
+} from '@/components/insights';
 
 // Group messages to combine AI responses with their tool calls and results
 interface MessageGroup {
@@ -490,17 +497,23 @@ export function ChatMessagesView({
   const handleViewGraphs = async () => {
     if (!currentChatId) return;
     
+    // Simply show the graphs modal with interactive charts
+    setShowGraphs(true);
+    
+    // Optional: fetch data from backend if available
+    // Uncomment this if backend provides data for charts
+    /*
     setLoadingGraphs(true);
     try {
       const result = await chatService.getChatInsightGraphs(currentChatId);
+      // Process result and pass to chart components as props
       setGraphs(result.graphs);
-      setShowGraphs(true);
     } catch (error) {
-      console.error('Failed to load graphs:', error);
-      alert('Failed to load insight graphs. Please try again.');
+      console.error('Failed to load graph data:', error);
     } finally {
       setLoadingGraphs(false);
     }
+    */
   };
 
   const downloadGraph = (graphName: string, base64Data: string) => {
@@ -547,7 +560,7 @@ export function ChatMessagesView({
       )}
 
       {/* Graphs Modal/Display */}
-      {showGraphs && graphs && (
+      {showGraphs && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowGraphs(false)}>
           <div className="bg-white rounded-lg border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-6xl max-h-[90vh] overflow-auto p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
@@ -563,28 +576,41 @@ export function ChatMessagesView({
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(graphs).map(([graphName, base64Data]) => (
-                <div key={graphName} className="border-2 border-black rounded-lg p-4 bg-gray-50">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-semibold capitalize">
-                      {graphName.replace(/_/g, ' ')}
-                    </h3>
-                    <Button
-                      onClick={() => downloadGraph(graphName, base64Data)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-8"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <img
-                    src={`data:image/png;base64,${base64Data}`}
-                    alt={graphName}
-                    className="w-full h-auto rounded border border-gray-300"
-                  />
-                </div>
-              ))}
+              {/* Opportunity Radar Chart */}
+              <OpportunityRadar 
+                onDownload={() => {
+                  // Optional: implement download as PNG
+                  console.log('Download Opportunity Radar');
+                }} 
+              />
+
+              {/* Market Growth Chart */}
+              <MarketGrowth 
+                onDownload={() => {
+                  console.log('Download Market Growth');
+                }} 
+              />
+
+              {/* Patent Timeline Chart */}
+              <PatentTimeline 
+                onDownload={() => {
+                  console.log('Download Patent Timeline');
+                }} 
+              />
+
+              {/* Competition Heatmap Chart */}
+              <CompetitionHeatmap 
+                onDownload={() => {
+                  console.log('Download Competition Heatmap');
+                }} 
+              />
+
+              {/* Signals Chart */}
+              <Signals 
+                onDownload={() => {
+                  console.log('Download Signals');
+                }} 
+              />
             </div>
           </div>
         </div>

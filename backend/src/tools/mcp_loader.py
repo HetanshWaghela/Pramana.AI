@@ -31,8 +31,10 @@ async def load_single_server_tools(
             )
 
             async with asyncio.timeout(timeout):
+                # Remove 'enabled' from config before passing to client
+                client_config = {k: v for k, v in config.items() if k != 'enabled'}
                 # Create client with single server config
-                client = MultiServerMCPClient({name: config})
+                client = MultiServerMCPClient({name: client_config})
                 tools = await client.get_tools()
 
                 logger.info(
