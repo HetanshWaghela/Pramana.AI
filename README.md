@@ -28,6 +28,8 @@
 - ⚡ **Lightning-Fast Inference** — Powered by Groq's LLaMA 3.3 70B models
 - 🔌 **Extensible Tool Ecosystem** — Model Context Protocol (MCP) integration
 - 📊 **Real-Time Streaming** — Watch AI agents think and work live
+- 🧩 **Workflow Canvas** — Visualize multi-agent orchestration as a node graph.
+  Run demo queries to animate each step (pending → processing → completed) and click nodes to inspect tasks and data sources.
 - 🎨 **Beautiful Neo-Brutalist UI** — Modern React 19 + Framer Motion design
 - 🔐 **Production-Ready Auth** — JWT authentication, SQLite/PostgreSQL persistence
 
@@ -45,8 +47,8 @@
 
 ```bash
 # Clone and enter directory
-git clone https://github.com/N1KH1LT0X1N/Pharma-Agent.git
-cd Pharma-Agent
+git clone https://github.com/darved2305/ggw_eytechathon.git
+cd ggw_eytechathon
 
 # Configure environment
 cd backend
@@ -63,7 +65,9 @@ cd .. && make dev
 
 **Access the app:**
 - Landing Page: http://localhost:5173
-- Chat Interface: http://localhost:5173/chat
+- Main App: http://localhost:5173/app
+- Workflow Canvas: http://localhost:5173/workflow
+- Chat Interface (legacy): http://localhost:5173/chat
 - LangGraph API: http://localhost:2024/docs
 
 > 💡 **New to the project?** Check out the [Development Guide](docs/development.md) for detailed setup instructions.
@@ -152,16 +156,21 @@ Connects to MCP servers (Filesystem, Brave Search) for extensible tool capabilit
 
 ## 🚢 Deployment
 
-### Development (3 servers required)
+### Development (2 servers + optional Auth API)
 
 ```bash
 # Option 1: Use Makefile (recommended)
 make dev
 
-# Option 2: Manual startup (3 separate terminals)
-cd backend && uvicorn src.auth.routes:app --reload     # Terminal 1 (port 8000)
-cd backend && uv run langgraph dev --no-browser        # Terminal 2 (port 2024)
-cd frontend && npm run dev                             # Terminal 3 (port 5173)
+# Option 2: Manual startup
+cd backend && uv run langgraph dev --no-browser        # Terminal 1 (port 2024)
+cd frontend && npm run dev                             # Terminal 2 (port 5173)
+
+# Optional: Auth API (needed for /login, /register, and persisted chat history)
+cd backend && uv run uvicorn src.auth.app:app --reload --port 8000
+
+# If uvicorn isn't available in your env:
+#   cd backend && uv add uvicorn
 ```
 
 ### Docker (Production)
