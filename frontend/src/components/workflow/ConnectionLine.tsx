@@ -1,16 +1,17 @@
 /**
  * ConnectionLine Component
- * SVG connection lines between workflow nodes with animation
- * Supports animated flow dots and directional arrows
+ * Beautified SVG connection lines with smooth bezier curves
+ * Subtle gradients and elegant flow animation
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { WorkflowConnection } from '@/types/workflow';
+import { Colors, Transitions } from './designTokens';
 
 interface Point {
-  x: number;
-  y: number;
+  readonly x: number;
+  readonly y: number;
 }
 
 interface ConnectionLineProps {
@@ -18,187 +19,180 @@ interface ConnectionLineProps {
   fromPosition: Point;
   toPosition: Point;
   isActive: boolean;
-  isDarkMode?: boolean;
 }
 
-export const ConnectionLine: React.FC<ConnectionLineProps> = ({
+export const ConnectionLine = memo<ConnectionLineProps>(({
   connection,
   fromPosition,
   toPosition,
   isActive,
-  isDarkMode = false,
 }) => {
-  // Calculate control points for a curved bezier path - horizontal curves
+  // Calculate smooth bezier curve control points
   const dx = toPosition.x - fromPosition.x;
+  const dy = toPosition.y - fromPosition.y;
   
-  // Use horizontal bezier curves with control points at 50% of horizontal distance
-  const controlOffset = Math.abs(dx) * 0.5;
+  // Adaptive control point offset for natural curves
+  const controlOffset = Math.abs(dx) * 0.4;
+  const verticalOffset = Math.abs(dy) * 0.15;
   
-  const path = `M ${fromPosition.x} ${fromPosition.y} 
-          C ${fromPosition.x + controlOffset} ${fromPosition.y}, 
-            ${toPosition.x - controlOffset} ${toPosition.y}, 
-            ${toPosition.x} ${toPosition.y}`;
+  const path = `M ${fromPosition.x},${fromPosition.y} 
+    C ${fromPosition.x + controlOffset},${fromPosition.y + verticalOffset} 
+      ${toPosition.x - controlOffset},${toPosition.y - verticalOffset} 
+      ${toPosition.x},${toPosition.y}`;
 
-  // Arrow marker ID unique to this connection
+  // Unique IDs for markers and gradients
   const markerId = `arrow-${connection.id}`;
+  const gradientId = `gradient-${connection.id}`;
 
-  // Cleaner colors for light mode
-  const inactiveColor = isDarkMode ? '#4a4a6a' : '#cbd5e1';
-  const activeColor = '#3B82F6';
-  
-  const strokeColor = isActive ? activeColor : inactiveColor;
+  const strokeColor = isActive ? Colors.edge.active : Colors.edge.inactive;
   const strokeWidth = isActive ? 2.5 : 2;
-  const dotColor = activeColor;
 
   return (
     <g>
-      {/* Arrow marker definition */}
+      {/* SVG definitions */}
       <defs>
+        {/* Minimal arrowhead */}
         <marker
           id={markerId}
-          markerWidth="10"
-          markerHeight="10"
-          refX="9"
-          refY="5"
+          markerWidth="8"
+          markerHeight="8"
+          refX="7"
+          refY="4"
           orient="auto"
           markerUnits="strokeWidth"
         >
           <path
-            d="M 0 0 L 10 5 L 0 10 z"
+            d="M 0,0 L 8,4 L 0,8 L 2,4 Z"
             fill={strokeColor}
+            fillOpacity={isActive ? 0.9 : 0.6}
           />
         </marker>
         
         {/* Gradient for active lines */}
         {isActive && (
-          <linearGradient id={`gradient-${connection.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#3B82F6" />
-            <stop offset="50%" stopColor="#60A5FA" />
-            <stop offset="100%" stopColor="#3B82F6" />
+          <linearGradient 
+            id={gradientId} 
+            x1="0%" 
+            y1="0%" 
+            x2="100%" 
+            y2="0%"
+          >
+            <stop offset="0%" stopColor={Colors.edge.gradient.from} stopOpacity="0.8" />
+            <stop offset="50%" stopColor={Colors.edge.gradient.mid} stopOpacity="1" />
+            <stop offset="100%" stopColor={Colors.edge.gradient.to} stopOpacity="0.8" />
           </linearGradient>
         )}
       </defs>
 
-      {/* Background stroke (shadow effect) */}
-      <path
-        d={path}
-        fill="none"
-        stroke="rgba(0,0,0,0.1)"
-        strokeWidth={strokeWidth + 2}
-        strokeLinecap="round"
-      />
-
-      {/* Main connection line - dashed style */}
+      {/* Subtle shadow stroke */}
       <motion.path
         d={path}
         fill="none"
-        stroke={isActive ? activeColor : strokeColor}
-        strokeWidth={strokeWidth}
+        stroke="rgba(0, 0, 0, 0.06)"
+        strokeWidth={strokeWidth + 1}
         strokeLinecap="round"
-        strokeDasharray="8 8"
-        markerEnd={`url(#${markerId})`}
         initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ 
-          pathLength: 1, 
-          opacity: 1,
-          strokeDashoffset: isActive && connection.animated ? [0, -32] : 0,
-        }}
-        transition={{
-          pathLength: { duration: 0.5, ease: 'easeInOut' },
-          opacity: { duration: 0.3 },
-          strokeDashoffset: {
-            duration: 0.8,
-            repeat: Infinity,
-            ease: 'linear',
-          },
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ 
+          duration: Transitions.duration.slow,
+          ease: Transitions.easing.easeOut as any
         }}
       />
 
-      {/* Animated flow dots for active connections */}
+      {/* Main connection path */}
+      <motion.path
+        d={path}
+        fill="none"
+        stroke={isActive ? `url(#${gradientId})` : strokeColor}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        markerEnd={`url(#${markerId})`}
+        opacity={isActive ? 0.95 : 0.5}
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ 
+          pathLength: 1, 
+          opacity: isActive ? 0.95 : 0.5,
+        }}
+        transition={{
+          pathLength: { 
+            duration: Transitions.duration.slower, 
+            ease: Transitions.easing.easeInOut as any 
+          },
+          opacity: { duration: Transitions.duration.base },
+        }}
+      />
+
+      {/* Animated flow particles for active connections */}
       {isActive && connection.animated && (
         <>
-          <motion.circle
-            r={4}
-            fill={dotColor}
-            initial={{ opacity: 0 }}
-            animate={{
-              opacity: [0, 1, 1, 0],
-              offsetDistance: ['0%', '100%'],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'linear',
-              times: [0, 0.1, 0.9, 1],
-            }}
-            style={{
-              offsetPath: `path("${path}")`,
-            }}
-          />
-          <motion.circle
-            r={4}
-            fill={dotColor}
-            initial={{ opacity: 0 }}
-            animate={{
-              opacity: [0, 1, 1, 0],
-              offsetDistance: ['0%', '100%'],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'linear',
-              times: [0, 0.1, 0.9, 1],
-              delay: 0.6,
-            }}
-            style={{
-              offsetPath: `path("${path}")`,
-            }}
-          />
-          <motion.circle
-            r={4}
-            fill={dotColor}
-            initial={{ opacity: 0 }}
-            animate={{
-              opacity: [0, 1, 1, 0],
-              offsetDistance: ['0%', '100%'],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'linear',
-              times: [0, 0.1, 0.9, 1],
-              delay: 1.2,
-            }}
-            style={{
-              offsetPath: `path("${path}")`,
-            }}
-          />
+          {[0, 0.4, 0.8].map((delay, i) => (
+            <motion.circle
+              key={`flow-${i}`}
+              r={3.5}
+              fill={Colors.edge.flow}
+              opacity={0.9}
+              filter="url(#glow)"
+              initial={{ offsetDistance: '0%', opacity: 0 }}
+              animate={{
+                offsetDistance: ['0%', '100%'],
+                opacity: [0, 1, 1, 0],
+              }}
+              transition={{
+                duration: 2.5,
+                repeat: Infinity,
+                ease: 'linear',
+                delay,
+                times: [0, 0.1, 0.85, 1],
+              }}
+              style={{
+                offsetPath: `path('${path}')`,
+              }}
+            />
+          ))}
         </>
       )}
+
+      {/* Glow filter for flow particles */}
+      <defs>
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+          <feMerge>
+            <feMergeNode in="coloredBlur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
     </g>
   );
-};
+});
+
+ConnectionLine.displayName = 'ConnectionLine';
+
 
 /**
- * ConnectionLines - Container for all connection lines
+ * ConnectionLines Container
+ * Renders all connections in the workflow
  */
 interface ConnectionLinesProps {
-  connections: WorkflowConnection[];
-  nodePositions: Record<string, Point>;
-  activeConnections: Set<string>;
-  isDarkMode?: boolean;
+  connections: readonly WorkflowConnection[];
+  nodePositions: Readonly<Record<string, Point>>;
+  activeConnections: ReadonlySet<string>;
 }
 
-export const ConnectionLines: React.FC<ConnectionLinesProps> = ({
+export const ConnectionLines = memo<ConnectionLinesProps>(({
   connections,
   nodePositions,
   activeConnections,
-  isDarkMode = true,
 }) => {
   return (
     <svg 
-      className="absolute inset-0 pointer-events-none z-0"
-      style={{ width: '100%', height: '100%' }}
+      className="absolute inset-0 pointer-events-none"
+      style={{ 
+        width: '100%', 
+        height: '100%',
+        zIndex: 1,
+      }}
     >
       {connections.map((connection) => {
         const fromPos = nodePositions[connection.from];
@@ -215,12 +209,13 @@ export const ConnectionLines: React.FC<ConnectionLinesProps> = ({
             fromPosition={fromPos}
             toPosition={toPos}
             isActive={isActive}
-            isDarkMode={isDarkMode}
           />
         );
       })}
     </svg>
   );
-};
+});
+
+ConnectionLines.displayName = 'ConnectionLines';
 
 export default ConnectionLine;

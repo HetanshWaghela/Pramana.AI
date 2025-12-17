@@ -34,7 +34,6 @@ interface NodeDetailsPanelProps {
   node: WorkflowNode | null;
   onClose: () => void;
   isOpen: boolean;
-  isDarkMode?: boolean;
 }
 
 // Status badge component
@@ -115,7 +114,6 @@ export const NodeDetailsPanel: React.FC<NodeDetailsPanelProps> = ({
   node,
   onClose,
   isOpen,
-  isDarkMode = false,
 }) => {
   if (!node) return null;
 

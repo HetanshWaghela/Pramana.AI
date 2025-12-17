@@ -770,7 +770,7 @@ export function ChatMessagesView({
     <div className="flex flex-col h-full min-h-0 overflow-hidden relative">
       {/* Action buttons - only show if we have messages and chatId */}
       {messages.length > 0 && currentChatId && (
-        <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <div className="flex-shrink-0 border-b border-gray-200 bg-white p-3 flex justify-end gap-2 shadow-sm">
           {/* Workflow Visualization Button - only for Portfolio Strategist */}
           {selectedAgentId === AgentId.PORTFOLIO_STRATEGIST && (
             <Button
@@ -876,7 +876,7 @@ export function ChatMessagesView({
       )}
 
       <ScrollArea className="flex-1 min-h-0 overflow-auto" ref={scrollAreaRef}>
-        <div className="p-4 md:p-6 space-y-2 max-w-4xl mx-auto pt-8 pb-24">
+        <div className="p-4 md:p-6 space-y-2 max-w-4xl mx-auto pb-24">
           {messageGroups.map((group, index) => {
             const isLast = index === messageGroups.length - 1;
             return (

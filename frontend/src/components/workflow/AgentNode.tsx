@@ -1,20 +1,31 @@
 /**
  * AgentNode Component
- * n8n-style node in the workflow visualization
- * Clean, minimal design with icon on left
+ * Beautified workflow node with Pramana.ai aesthetic
+ * Soft colors, smooth interactions, premium feel
  */
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { memo, useMemo } from 'react';
+import { motion, type Variants } from 'framer-motion';
 import { 
   MessageSquare, Brain, TrendingUp, Ship, FileText, Stethoscope, 
-  FolderSearch, Globe, Combine, CheckCircle2, FileDown, Plus
+  FolderSearch, Globe, Combine, CheckCircle2, FileDown, type LucideIcon
 } from 'lucide-react';
-import { WorkflowNode, WorkflowAgentId } from '@/types/workflow';
+import { WorkflowNode, WorkflowAgentId, type NodeStatus } from '@/types/workflow';
+import { 
+  Colors, 
+  Radii, 
+  Shadows, 
+  Transitions, 
+  NodeDimensions, 
+  Typography, 
+  ZIndex,
+  type ColorCategory,
+  getNodeColors 
+} from './designTokens';
 import { cn } from '@/lib/utils';
 
-// Icon mapping
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+// Typed icon mapping
+const ICON_MAP: Readonly<Record<string, LucideIcon>> = {
   MessageSquare,
   Brain,
   TrendingUp,
@@ -26,17 +37,16 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Combine,
   CheckCircle2,
   FileDown,
-};
+} as const;
 
 interface AgentNodeProps {
   node: WorkflowNode;
   isSelected: boolean;
   onClick: (id: WorkflowAgentId) => void;
   isActive: boolean;
-  isDarkMode?: boolean;
 }
 
-export const AgentNode: React.FC<AgentNodeProps> = ({
+export const AgentNode = memo<AgentNodeProps>(({
   node,
   isSelected,
   onClick,
@@ -49,168 +59,181 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
   const isCompleted = status === 'completed';
   const isInactive = !isActive && status === 'inactive';
 
-  // n8n-style node colors - clean and minimal
-  const getNodeStyle = () => {
+  // Get color scheme based on category
+  const colorScheme = useMemo(() => {
     if (isInactive) {
-      return {
-        bg: '#f8fafc',
-        border: '#e2e8f0',
-        iconBg: '#e2e8f0',
-        iconColor: '#94a3b8',
-      };
+      return Colors.node.inactive;
     }
-    
-    switch (agent.category) {
-      case 'entry':
-        return {
-          bg: '#ffffff',
-          border: isRunning ? '#22c55e' : '#d1fae5',
-          iconBg: '#22c55e',
-          iconColor: '#ffffff',
-        };
-      case 'orchestrator':
-        return {
-          bg: '#ffffff',
-          border: isRunning ? '#6366f1' : '#e0e7ff',
-          iconBg: '#6366f1',
-          iconColor: '#ffffff',
-        };
-      case 'worker':
-        return {
-          bg: '#ffffff',
-          border: isRunning ? '#f97316' : '#fed7aa',
-          iconBg: '#f97316',
-          iconColor: '#ffffff',
-        };
-      case 'aggregator':
-        return {
-          bg: '#ffffff',
-          border: isRunning ? '#a855f7' : '#e9d5ff',
-          iconBg: '#a855f7',
-          iconColor: '#ffffff',
-        };
-      case 'output':
-        return {
-          bg: '#ffffff',
-          border: isRunning ? '#14b8a6' : '#ccfbf1',
-          iconBg: '#14b8a6',
-          iconColor: '#ffffff',
-        };
-      case 'report':
-        return {
-          bg: '#ffffff',
-          border: isRunning ? '#ec4899' : '#fce7f3',
-          iconBg: '#ec4899',
-          iconColor: '#ffffff',
-        };
-      default:
-        return {
-          bg: '#ffffff',
-          border: '#e2e8f0',
-          iconBg: '#64748b',
-          iconColor: '#ffffff',
-        };
-    }
+    return getNodeColors(agent.category as ColorCategory, isActive);
+  }, [agent.category, isActive, isInactive]);
+
+  // Animation variants
+  const nodeVariants: Variants = {
+    initial: { scale: 0.8, opacity: 0 },
+    animate: { scale: 1, opacity: 1 },
+    hover: { 
+      scale: 1.05, 
+      y: -3,
+      transition: { 
+        duration: Transitions.duration.fast,
+        ease: Transitions.easing.easeOut as any
+      }
+    },
+    tap: { scale: 0.98 },
   };
 
-  const style = getNodeStyle();
+  // Pulsing glow animation for running state
+  const glowAnimation = isRunning ? {
+    boxShadow: [
+      `0 0 0 0 ${colorScheme.borderActive}60, ${Shadows.md}`,
+      `0 0 0 8px ${colorScheme.borderActive}30, ${Shadows.lg}`,
+      `0 0 0 0 ${colorScheme.borderActive}60, ${Shadows.md}`,
+    ],
+  } : {};
 
   return (
     <motion.div
       className={cn(
         'absolute cursor-pointer select-none',
-        isInactive && 'opacity-50'
+        isInactive && 'opacity-40'
       )}
       style={{
         left: position.x,
         top: position.y,
         transform: 'translate(-50%, -50%)',
+        zIndex: isSelected ? ZIndex.selectedNode : ZIndex.nodes,
       }}
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.05, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      transition={{ duration: 0.2 }}
-      onClick={() => onClick(node.id)}
+      variants={nodeVariants}
+      initial="initial"
+      animate="animate"
+      whileHover={!isInactive ? "hover" : undefined}
+      whileTap={!isInactive ? "tap" : undefined}
+      onClick={() => !isInactive && onClick(node.id)}
     >
-      {/* n8n-style Node - Icon box with label */}
       <div className="flex flex-col items-center gap-2">
-        {/* Icon Container - Main clickable area */}
+        {/* Main Icon Container */}
         <motion.div
           className={cn(
-            'relative rounded-2xl flex items-center justify-center',
-            'w-[52px] h-[52px]',
-            isSelected && 'ring-2 ring-blue-400 ring-offset-2'
+            'relative flex items-center justify-center group',
+            'backdrop-blur-sm',
+            isSelected && 'ring-4 ring-offset-2'
           )}
           style={{
-            backgroundColor: style.bg,
-            border: `2px solid ${style.border}`,
-            boxShadow: isRunning 
-              ? `0 0 0 3px ${style.border}40, 0 8px 20px -4px rgba(0,0,0,0.15)` 
-              : '0 4px 12px -2px rgba(0,0,0,0.08)',
+            width: NodeDimensions.icon.wrapper,
+            height: NodeDimensions.icon.wrapper,
+            backgroundColor: colorScheme.background,
+            border: `2.5px solid ${isRunning ? colorScheme.borderActive : colorScheme.border}`,
+            borderRadius: Radii.xl,
+            boxShadow: isRunning ? Shadows.lg : Shadows.base,
+            ringColor: isSelected ? Colors.ui.selection.ring : undefined,
           }}
-          animate={isRunning ? {
-            boxShadow: [
-              `0 0 0 3px ${style.border}40, 0 8px 20px -4px rgba(0,0,0,0.15)`,
-              `0 0 0 6px ${style.border}30, 0 8px 20px -4px rgba(0,0,0,0.15)`,
-              `0 0 0 3px ${style.border}40, 0 8px 20px -4px rgba(0,0,0,0.15)`,
-            ],
-          } : {}}
+          animate={glowAnimation}
           transition={isRunning ? {
-            duration: 1.5,
+            duration: 1.8,
             repeat: Infinity,
             ease: 'easeInOut',
           } : {}}
         >
-          {/* Colored Icon Circle */}
+          {/* Icon with gradient background */}
           <div
-            className="rounded-xl flex items-center justify-center w-9 h-9"
-            style={{ backgroundColor: style.iconBg }}
+            className="flex items-center justify-center rounded-xl relative overflow-hidden"
+            style={{
+              width: NodeDimensions.icon.inner,
+              height: NodeDimensions.icon.inner,
+              background: isInactive 
+                ? colorScheme.icon
+                : `linear-gradient(135deg, ${(colorScheme as any).iconGradient?.from || colorScheme.icon} 0%, ${(colorScheme as any).iconGradient?.to || colorScheme.icon} 100%)`,
+            }}
           >
-            <IconComponent className="w-5 h-5 text-white" />
+            <IconComponent 
+              className="relative z-10" 
+              size={20}
+              strokeWidth={2.5}
+              style={{ color: Colors.ui.text.inverse }}
+            />
+            
+            {/* Subtle shine effect on hover */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent opacity-0 group-hover:opacity-100"
+              transition={{ duration: Transitions.duration.base }}
+            />
           </div>
 
-          {/* Status indicator - top right */}
+          {/* Completion checkmark */}
           {isCompleted && (
             <motion.div
-              className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center border-2 border-white"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', delay: 0.1 }}
+              className="absolute -top-2 -right-2 rounded-full flex items-center justify-center"
+              style={{
+                width: 22,
+                height: 22,
+                backgroundColor: Colors.status.completed,
+                boxShadow: `0 2px 8px ${Colors.status.completed}40`,
+                border: `3px solid ${Colors.canvas.background}`,
+              }}
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ 
+                type: 'spring',
+                stiffness: 500,
+                damping: 25,
+                delay: 0.1
+              }}
             >
-              <CheckCircle2 className="w-3 h-3 text-white" />
+              <CheckCircle2 size={12} style={{ color: Colors.ui.text.inverse }} />
             </motion.div>
           )}
 
           {/* Running pulse indicator */}
           {isRunning && (
             <motion.div
-              className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white"
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
+              className="absolute -top-2 -right-2 rounded-full"
+              style={{
+                width: 18,
+                height: 18,
+                backgroundColor: Colors.status.running,
+                border: `3px solid ${Colors.canvas.background}`,
+                boxShadow: `0 0 12px ${Colors.status.running}`,
+              }}
+              animate={{ 
+                scale: [1, 1.2, 1], 
+                opacity: [1, 0.7, 1] 
+              }}
+              transition={{ 
+                duration: 1.2, 
+                repeat: Infinity,
+                ease: 'easeInOut'
+              }}
             />
           )}
-
-          {/* Plus button (n8n style) - shown on hover */}
-          <motion.div
-            className="absolute -right-2 top-1/2 -translate-y-1/2 w-5 h-5 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center border border-gray-300 opacity-0 group-hover:opacity-100 transition-opacity"
-            initial={{ opacity: 0, x: -5 }}
-            whileHover={{ opacity: 1, x: 0 }}
-          >
-            <Plus className="w-3 h-3 text-gray-500" />
-          </motion.div>
         </motion.div>
 
-        {/* Label below icon */}
-        <div className="text-center max-w-[120px]">
-          <p className="text-xs font-semibold text-gray-800 truncate leading-tight">
+        {/* Label */}
+        <div 
+          className="text-center select-none"
+          style={{ 
+            maxWidth: NodeDimensions.labelMaxWidth,
+            fontFamily: Typography.fontFamily.sans 
+          }}
+        >
+          <p 
+            className="truncate font-semibold leading-tight"
+            style={{
+              fontSize: Typography.fontSize.sm,
+              fontWeight: Typography.fontWeight.semibold,
+              color: Colors.ui.text.primary,
+            }}
+          >
             {agent.shortName}
           </p>
           {isRunning && (
             <motion.p 
-              className="text-[10px] text-blue-500 font-medium"
+              className="font-medium"
+              style={{
+                fontSize: Typography.fontSize.xs,
+                color: Colors.status.running,
+              }}
               animate={{ opacity: [1, 0.5, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
+              transition={{ duration: 1.2, repeat: Infinity }}
             >
               Processing...
             </motion.p>
@@ -219,6 +242,8 @@ export const AgentNode: React.FC<AgentNodeProps> = ({
       </div>
     </motion.div>
   );
-};
+});
+
+AgentNode.displayName = 'AgentNode';
 
 export default AgentNode;

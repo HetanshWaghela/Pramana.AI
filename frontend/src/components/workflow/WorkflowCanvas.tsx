@@ -1,17 +1,17 @@
 /**
  * WorkflowCanvas Component
- * Main canvas with node layout, connections, and controls
- * Implements workflow visualization with dot grid background and node positioning
+ * Main canvas with beautified Pramana.ai aesthetic
+ * Subtle dotted grid, glass toolbar, smooth interactions
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ZoomIn, ZoomOut, RotateCcw, Play, Pause, ChevronDown } from 'lucide-react';
 import { 
   WorkflowAgentId, 
   WorkflowNode, 
   WorkflowConnection, 
-  NodeStatus,
+  type NodeStatus,
   WORKFLOW_AGENTS,
   DEMO_QUERIES,
 } from '@/types/workflow';
@@ -25,6 +25,16 @@ import { ConnectionLines } from './ConnectionLine';
 import { NodeDetailsPanel } from './NodeDetailsPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { 
+  Colors, 
+  Radii, 
+  Shadows, 
+  Transitions, 
+  CanvasLayout, 
+  ZIndex 
+} from './designTokens';
+
+type AnimationPhase = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
 interface WorkflowCanvasProps {
   currentQuery: string;
@@ -86,13 +96,12 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   autoplay = false,
 }) => {
   // State
-  const [zoomLevel, setZoomLevel] = useState(0.85);
+  const [zoomLevel, setZoomLevel] = useState<number>(CanvasLayout.defaultZoom);
   const [selectedNodeId, setSelectedNodeId] = useState<WorkflowAgentId | null>(null);
-  const [isAnimating, setIsAnimating] = useState(autoplay); // Start animating if autoplay is true
-  const [animationPhase, setAnimationPhase] = useState(autoplay ? 1 : 0); // Start at phase 1 if autoplay
+  const [isAnimating, setIsAnimating] = useState<boolean>(autoplay);
+  const [animationPhase, setAnimationPhase] = useState<AnimationPhase>(autoplay ? 1 : 0);
   const [selectedDemoIndex, setSelectedDemoIndex] = useState<number | null>(initialDemoIndex);
-  const [showDemoDropdown, setShowDemoDropdown] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); // Light mode by default
+  const [showDemoDropdown, setShowDemoDropdown] = useState<boolean>(false);
 
   // Canvas dimensions - much wider for horizontal flow
   const canvasWidth = 1600;
@@ -256,15 +265,15 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   }, []);
 
   const handleZoomIn = useCallback(() => {
-    setZoomLevel(prev => Math.min(prev + 0.1, 1.5));
+    setZoomLevel(prev => Math.min(prev + 0.1, CanvasLayout.maxZoom));
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setZoomLevel(prev => Math.max(prev - 0.1, 0.5));
+    setZoomLevel(prev => Math.max(prev - 0.1, CanvasLayout.minZoom));
   }, []);
 
   const handleReset = useCallback(() => {
-    setZoomLevel(0.85);
+    setZoomLevel(CanvasLayout.defaultZoom);
     setIsAnimating(false);
     setAnimationPhase(0);
     setSelectedNodeId(null);
@@ -286,37 +295,135 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   const selectedNode = selectedNodeId ? nodes[selectedNodeId] : null;
 
   return (
-    <div className={cn(
-      "relative w-full h-full overflow-hidden transition-colors duration-300",
-      isDarkMode ? "bg-[#1a1a2e]" : "bg-gradient-to-br from-slate-50 via-slate-100 to-blue-50"
-    )}>
-      {/* Dot Grid Background */}
+    <div 
+      className="relative w-full h-full overflow-hidden"
+      style={{
+        backgroundColor: Colors.canvas.background,
+      }}
+    >
+      {/* Subtle Dot Grid Background */}
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: isDarkMode 
-            ? `radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)`
-            : `radial-gradient(circle, rgba(148,163,184,0.4) 1px, transparent 1px)`,
-          backgroundSize: '24px 24px',
+          backgroundImage: `radial-gradient(circle, ${Colors.canvas.grid} ${CanvasLayout.grid.dotRadius}px, transparent ${CanvasLayout.grid.dotRadius}px)`,
+          backgroundSize: `${CanvasLayout.grid.size}px ${CanvasLayout.grid.size}px`,
+          opacity: Colors.canvas.gridOpacity,
         }}
       />
 
-      {/* Controls Bar */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-        {/* Demo Query Selector */}
-        <div className="relative">
+      {/* Glass Floating Toolbar */}
+      <div 
+        className="absolute top-4 right-4 flex flex-col gap-2"
+        style={{ zIndex: ZIndex.toolbar }}
+      >
+        {/* Zoom Controls */}
+        <motion.div 
+          className="flex flex-col gap-1 rounded-xl p-2 backdrop-blur-md"
+          style={{
+            backgroundColor: Colors.ui.glass.background,
+            border: `1px solid ${Colors.ui.glass.border}`,
+            boxShadow: Shadows.lg,
+          }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 hover:bg-white/80 transition-all"
+            onClick={handleZoomIn}
+            title="Zoom In"
+            style={{ borderRadius: Radii.md }}
+          >
+            <ZoomIn size={18} style={{ color: Colors.ui.text.primary }} />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 hover:bg-white/80 transition-all"
+            onClick={handleZoomOut}
+            title="Zoom Out"
+            style={{ borderRadius: Radii.md }}
+          >
+            <ZoomOut size={18} style={{ color: Colors.ui.text.primary }} />
+          </Button>
+          
+          <div className="h-px w-full my-1" style={{ backgroundColor: Colors.ui.glass.border }} />
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 hover:bg-white/80 transition-all"
+            onClick={handleReset}
+            title="Reset View"
+            style={{ borderRadius: Radii.md }}
+          >
+            <RotateCcw size={18} style={{ color: Colors.ui.text.primary }} />
+          </Button>
+        </motion.div>
+
+        {/* Animation Control */}
+        <motion.div
+          className="rounded-xl p-2 backdrop-blur-md"
+          style={{
+            backgroundColor: Colors.ui.glass.background,
+            border: `1px solid ${Colors.ui.glass.border}`,
+            boxShadow: Shadows.lg,
+          }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 px-3 hover:bg-white/80 transition-all font-medium"
+            onClick={isAnimating ? () => setIsAnimating(false) : handleStartAnimation}
+            style={{ 
+              borderRadius: Radii.md,
+              color: isAnimating ? Colors.status.running : Colors.ui.text.primary,
+            }}
+          >
+            {isAnimating ? (
+              <>
+                <Pause size={16} className="mr-2" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Play size={16} className="mr-2" />
+                Run Workflow
+              </>
+            )}
+          </Button>
+        </motion.div>
+      </div>
+
+      {/* Demo Query Selector - Top Left */}
+      <div 
+        className="absolute top-4 left-4"
+        style={{ zIndex: ZIndex.toolbar }}
+      >
+        <motion.div
+          className="relative"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
           <Button
             variant="outline"
-            className={cn(
-              "font-semibold transition-all rounded-lg",
-              isDarkMode 
-                ? "bg-[#2d2d44] border-[#3d3d5c] text-white hover:bg-[#3d3d5c]" 
-                : "bg-white border-gray-300 text-gray-800 hover:bg-gray-50"
-            )}
+            className="font-medium transition-all backdrop-blur-md shadow-lg"
+            style={{
+              backgroundColor: Colors.ui.glass.background,
+              border: `1px solid ${Colors.ui.glass.border}`,
+              borderRadius: Radii.lg,
+              color: Colors.ui.text.primary,
+            }}
             onClick={() => setShowDemoDropdown(!showDemoDropdown)}
           >
             {selectedDemoIndex !== null 
-              ? `Demo ${selectedDemoIndex + 1}: ${DEMO_QUERIES[selectedDemoIndex].description.slice(0, 25)}...`
+              ? `Demo ${selectedDemoIndex + 1}: ${DEMO_QUERIES[selectedDemoIndex].description.slice(0, 30)}...`
               : 'Select Demo Query'}
             <ChevronDown className="w-4 h-4 ml-2" />
           </Button>
@@ -324,12 +431,14 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
           <AnimatePresence>
             {showDemoDropdown && (
               <motion.div
-                className={cn(
-                  "absolute top-full left-0 mt-2 w-[420px] rounded-xl overflow-hidden z-30 shadow-2xl",
-                  isDarkMode 
-                    ? "bg-[#2d2d44] border border-[#3d3d5c]" 
-                    : "bg-white border border-gray-200"
-                )}
+                className="absolute top-full left-0 mt-2 w-[450px] overflow-hidden backdrop-blur-md"
+                style={{
+                  backgroundColor: Colors.ui.glass.background,
+                  border: `1px solid ${Colors.ui.glass.border}`,
+                  borderRadius: Radii.xl,
+                  boxShadow: Shadows.xl,
+                  zIndex: ZIndex.tooltip,
+                }}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
@@ -337,25 +446,23 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                 {DEMO_QUERIES.map((demo, idx) => (
                   <button
                     key={idx}
-                    className={cn(
-                      "w-full p-4 text-left transition-colors border-b last:border-b-0",
-                      isDarkMode 
-                        ? "border-[#3d3d5c] hover:bg-[#3d3d5c]" 
-                        : "border-gray-100 hover:bg-gray-50",
-                      selectedDemoIndex === idx && (isDarkMode ? "bg-[#3d3d5c]" : "bg-blue-50")
-                    )}
+                    className="w-full p-4 text-left transition-all border-b last:border-b-0 hover:bg-white/60"
+                    style={{
+                      borderColor: Colors.ui.glass.border,
+                      backgroundColor: selectedDemoIndex === idx ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                    }}
                     onClick={() => handleSelectDemo(idx)}
                   >
-                    <p className={cn(
-                      "font-semibold text-sm",
-                      isDarkMode ? "text-white" : "text-gray-800"
-                    )}>
+                    <p 
+                      className="font-semibold text-sm"
+                      style={{ color: Colors.ui.text.primary }}
+                    >
                       Demo {idx + 1}: {demo.description}
                     </p>
-                    <p className={cn(
-                      "text-xs mt-1 line-clamp-1",
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    )}>
+                    <p 
+                      className="text-xs mt-1 line-clamp-1"
+                      style={{ color: Colors.ui.text.secondary }}
+                    >
                       {demo.query}
                     </p>
                   </button>
@@ -363,125 +470,36 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-
-        {/* Zoom, Theme and Animation Controls */}
-        <div className="flex items-center gap-2">
-          {/* Dark Mode Toggle */}
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn(
-              "rounded-lg transition-all",
-              isDarkMode 
-                ? "bg-[#2d2d44] border-[#3d3d5c] text-white hover:bg-[#3d3d5c]" 
-                : "bg-white border-gray-300 text-gray-800 hover:bg-gray-50"
-            )}
-            onClick={() => setIsDarkMode(!isDarkMode)}
-          >
-            {isDarkMode ? '☀️' : '🌙'}
-          </Button>
-          
-          <div className={cn("w-px h-6 mx-1", isDarkMode ? "bg-[#3d3d5c]" : "bg-gray-300")} />
-          
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn(
-              "rounded-lg",
-              isDarkMode 
-                ? "bg-[#2d2d44] border-[#3d3d5c] text-white hover:bg-[#3d3d5c]" 
-                : "bg-white border-gray-300"
-            )}
-            onClick={handleZoomOut}
-          >
-            <ZoomOut className="w-4 h-4" />
-          </Button>
-          <span className={cn(
-            "text-sm font-semibold px-3 py-1.5 rounded-lg",
-            isDarkMode 
-              ? "bg-[#2d2d44] border border-[#3d3d5c] text-white" 
-              : "bg-white border border-gray-300 text-gray-800"
-          )}>
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn(
-              "rounded-lg",
-              isDarkMode 
-                ? "bg-[#2d2d44] border-[#3d3d5c] text-white hover:bg-[#3d3d5c]" 
-                : "bg-white border-gray-300"
-            )}
-            onClick={handleZoomIn}
-          >
-            <ZoomIn className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className={cn(
-              "rounded-lg",
-              isDarkMode 
-                ? "bg-[#2d2d44] border-[#3d3d5c] text-white hover:bg-[#3d3d5c]" 
-                : "bg-white border-gray-300"
-            )}
-            onClick={handleReset}
-          >
-            <RotateCcw className="w-4 h-4" />
-          </Button>
-          
-          <div className={cn("w-px h-6 mx-1", isDarkMode ? "bg-[#3d3d5c]" : "bg-gray-300")} />
-          
-          <Button
-            className={cn(
-              "font-semibold rounded-lg px-4",
-              isAnimating 
-                ? "bg-red-500 hover:bg-red-600 text-white" 
-                : "bg-emerald-500 hover:bg-emerald-600 text-white"
-            )}
-            onClick={isAnimating ? handleReset : handleStartAnimation}
-            disabled={!activeQuery && selectedDemoIndex === null}
-          >
-            {isAnimating ? (
-              <>
-                <Pause className="w-4 h-4 mr-2" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4 mr-2" />
-                Run Workflow
-              </>
-            )}
-          </Button>
-        </div>
+        </motion.div>
       </div>
 
       {/* Current Query Display */}
       {activeQuery && (
-        <div className="absolute top-16 left-4 z-10">
+        <div 
+          className="absolute top-20 left-4"
+          style={{ zIndex: ZIndex.toolbar - 1, maxWidth: '500px' }}
+        >
           <motion.div 
-            className={cn(
-              "rounded-xl p-4 max-w-xl shadow-lg",
-              isDarkMode 
-                ? "bg-[#2d2d44] border border-[#3d3d5c]" 
-                : "bg-white border border-gray-200"
-            )}
+            className="rounded-xl p-4 backdrop-blur-md"
+            style={{
+              backgroundColor: Colors.ui.glass.background,
+              border: `1px solid ${Colors.ui.glass.border}`,
+              boxShadow: Shadows.md,
+            }}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
           >
-            <p className={cn(
-              "text-xs font-semibold uppercase tracking-wide mb-1",
-              isDarkMode ? "text-gray-400" : "text-gray-500"
-            )}>
+            <p 
+              className="text-xs font-semibold uppercase tracking-wide mb-2"
+              style={{ color: Colors.ui.text.muted }}
+            >
               Current Query
             </p>
-            <p className={cn(
-              "text-sm font-medium",
-              isDarkMode ? "text-white" : "text-gray-800"
-            )}>
+            <p 
+              className="text-sm font-medium"
+              style={{ color: Colors.ui.text.primary }}
+            >
               {activeQuery}
             </p>
           </motion.div>
@@ -510,7 +528,6 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
               connections={connections}
               nodePositions={nodePositions}
               activeConnections={activeConnectionIds}
-              isDarkMode={isDarkMode}
             />
 
             {/* Agent Nodes */}
@@ -521,41 +538,42 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
                 isSelected={selectedNodeId === node.id}
                 onClick={handleNodeClick}
                 isActive={activeAgentIds.includes(node.id)}
-                isDarkMode={isDarkMode}
               />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Phase Indicator */}
+      {/* Phase Indicator - Bottom Left */}
       {isAnimating && (
         <motion.div 
-          className={cn(
-            "absolute bottom-4 left-4 rounded-xl p-4 shadow-lg",
-            isDarkMode 
-              ? "bg-[#2d2d44] border border-[#3d3d5c]" 
-              : "bg-white border border-gray-200"
-          )}
+          className="absolute bottom-4 left-4 rounded-xl p-4 backdrop-blur-md"
+          style={{
+            backgroundColor: Colors.ui.glass.background,
+            border: `1px solid ${Colors.ui.glass.border}`,
+            boxShadow: Shadows.md,
+            zIndex: ZIndex.toolbar,
+          }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className={cn(
-            "text-xs font-semibold uppercase tracking-wide mb-1",
-            isDarkMode ? "text-gray-400" : "text-gray-500"
-          )}>
+          <p 
+            className="text-xs font-semibold uppercase tracking-wide mb-2"
+            style={{ color: Colors.ui.text.muted }}
+          >
             Phase
           </p>
           <div className="flex items-center gap-2">
             <motion.div 
-              className="w-2 h-2 rounded-full bg-emerald-500"
-              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
+              className="w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: Colors.status.running }}
+              animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
             />
-            <p className={cn(
-              "text-sm font-semibold",
-              isDarkMode ? "text-emerald-400" : "text-emerald-600"
-            )}>
+            <p 
+              className="text-sm font-semibold"
+              style={{ color: Colors.status.running }}
+            >
               {animationPhase <= 1 && "Receiving Query"}
               {animationPhase === 2 && "Parsing & Routing"}
               {(animationPhase === 3 || animationPhase === 4) && "Gathering Evidence"}
@@ -568,45 +586,74 @@ export const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
         </motion.div>
       )}
 
-      {/* Legend */}
-      <div className={cn(
-        "absolute bottom-4 right-4 rounded-xl p-4 shadow-lg",
-        isDarkMode 
-          ? "bg-[#2d2d44] border border-[#3d3d5c]" 
-          : "bg-white border border-gray-200"
-      )}>
-        <p className={cn(
-          "text-xs font-semibold uppercase tracking-wide mb-3",
-          isDarkMode ? "text-gray-400" : "text-gray-500"
-        )}>
+      {/* Legend - Bottom Right */}
+      <motion.div 
+        className="absolute bottom-4 right-4 rounded-xl p-4 backdrop-blur-md"
+        style={{
+          backgroundColor: Colors.ui.glass.background,
+          border: `1px solid ${Colors.ui.glass.border}`,
+          boxShadow: Shadows.md,
+          zIndex: ZIndex.toolbar,
+        }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <p 
+          className="text-xs font-semibold uppercase tracking-wide mb-3"
+          style={{ color: Colors.ui.text.muted }}
+        >
           Legend
         </p>
         <div className="flex flex-wrap gap-4 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>Entry/Output</span>
+            <div 
+              className="w-3 h-3 rounded-full"
+              style={{ 
+                backgroundColor: Colors.node.entry.icon,
+                boxShadow: `0 0 8px ${Colors.node.entry.icon}60`,
+              }}
+            />
+            <span style={{ color: Colors.ui.text.secondary }}>Entry/Output</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-            <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>Orchestrator</span>
+            <div 
+              className="w-3 h-3 rounded-full"
+              style={{ 
+                backgroundColor: Colors.node.orchestrator.icon,
+                boxShadow: `0 0 8px ${Colors.node.orchestrator.icon}60`,
+              }}
+            />
+            <span style={{ color: Colors.ui.text.secondary }}>Orchestrator</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-            <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>Worker</span>
+            <div 
+              className="w-3 h-3 rounded-full"
+              style={{ 
+                backgroundColor: Colors.node.worker.icon,
+                boxShadow: `0 0 8px ${Colors.node.worker.icon}60`,
+              }}
+            />
+            <span style={{ color: Colors.ui.text.secondary }}>Worker</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]" />
-            <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>Report</span>
+            <div 
+              className="w-3 h-3 rounded-full"
+              style={{ 
+                backgroundColor: Colors.node.report.icon,
+                boxShadow: `0 0 8px ${Colors.node.report.icon}60`,
+              }}
+            />
+            <span style={{ color: Colors.ui.text.secondary }}>Report</span>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Node Details Panel */}
       <NodeDetailsPanel
         node={selectedNode}
         onClose={handleClosePanel}
         isOpen={!!selectedNodeId}
-        isDarkMode={isDarkMode}
       />
 
       {/* Click outside to close dropdown */}
