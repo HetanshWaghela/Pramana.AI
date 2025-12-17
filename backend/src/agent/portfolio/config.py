@@ -8,7 +8,7 @@ class PortfolioConfiguration(BaseModel):
     """Configuration for Portfolio Strategist agent."""
     
     orchestrator_model: str = Field(
-        default="llama-3.3-70b-versatile",
+        default="llama-3.1-8b-instant",
         description="Model for orchestrator reasoning and story generation"
     )
     worker_model: str = Field(

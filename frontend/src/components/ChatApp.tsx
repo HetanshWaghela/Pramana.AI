@@ -19,6 +19,7 @@ export const ChatApp: React.FC = () => {
     const [selectedAgentId, setSelectedAgentId] = useState(DEFAULT_AGENT);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const hasFinalizeEventOccurredRef = useRef(false);
+    const [error, setError] = useState<string | null>(null);
 
     const validateAgentId = useCallback((agentId: string): string => {
         if (isValidAgentId(agentId)) {
@@ -65,6 +66,10 @@ export const ChatApp: React.FC = () => {
         messagesKey: 'messages',
         onFinish: (event: unknown) => {
             console.log(event);
+        },
+        onError: (e: any) => {
+            console.error(e);
+            setError(e?.message || "An unexpected error occurred.");
         },
         onUpdateEvent: (event: Record<string, unknown>) => {
             // Only process events for agents that have showActivityTimeline enabled
@@ -350,6 +355,19 @@ export const ChatApp: React.FC = () => {
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full min-h-0">
+                {error && (
+                    <div className="mx-6 mt-4 p-4 bg-red-100 border-2 border-red-500 text-red-700 rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span className="font-medium">Error: {error}</span>
+                        <button onClick={() => setError(null)} className="ml-auto hover:bg-red-200 p-1 rounded">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                )}
                 <div
                     className={`flex-1 min-h-0 ${thread.messages.length === 0 ? 'flex' : ''
                         }`}

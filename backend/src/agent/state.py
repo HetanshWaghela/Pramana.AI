@@ -23,6 +23,8 @@ class ChatbotState(TypedDict):
     """State for basic chatbot functionality."""
 
     messages: Annotated[list, add_messages]
+    thinking_content: str  # Content shown in the thinking dropdown
+    thinking_title: str  # Title for the thinking phase
 
 
 class MathAgentState(TypedDict):

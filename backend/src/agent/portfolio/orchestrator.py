@@ -7,6 +7,7 @@ Annotated reducers for result merging.
 import os
 import asyncio
 import json
+import time
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -43,6 +44,13 @@ patents_connector = PatentsConnector()
 exim_connector = EXIMConnector()
 internal_connector = InternalDocsConnector()
 web_connector = WebSearchConnector()
+
+# Processing delays (in seconds) to simulate realistic API call times
+# This allows users to see the thinking process in the activity timeline
+WORKER_DELAY = 1.0  # Delay per worker (they run in parallel, so total ~1s)
+SYNTHESIS_DELAY = 1.5  # Delay for evidence synthesis
+STORY_DELAY = 1.0  # Delay for story generation
+FINALIZE_DELAY = 0.5  # Delay for final report
 
 
 def get_research_topic(messages: list) -> str:
@@ -85,6 +93,7 @@ def clarify_scope(state: PortfolioState, config: RunnableConfig) -> dict:
     Uses structured output with fallback for robustness.
     Handles greetings by asking for topic.
     """
+    time.sleep(1.5)  # Initial thinking delay
     configurable = PortfolioConfiguration.from_runnable_config(config)
     
     query = get_research_topic(state.get("messages", []))
@@ -121,6 +130,7 @@ What would you like to explore?"""
         temperature=0.3,
         max_retries=2,
         api_key=os.getenv("GROQ_API_KEY"),
+        streaming=False,
     )
     
     prompt = clarification_prompt.format(
@@ -146,6 +156,25 @@ What would you like to explore?"""
                 "current_phase": "gathering",
             }
     except Exception as e:
+        # If the provider is rate-limiting, fail gracefully with a helpful message.
+        err_text = str(e)
+        if "rate_limit" in err_text.lower() or "rate limit" in err_text.lower():
+            return {
+                "messages": [
+                    AIMessage(
+                        content=(
+                            "I hit the Groq token rate limit while trying to parse your query.\n\n"
+                            "Please wait a few minutes and try again, or switch the Portfolio Strategist model to a smaller one (e.g. `llama-3.1-8b-instant`) in the server config."
+                        )
+                    )
+                ],
+                "current_phase": "awaiting_topic",
+                "molecule": "Unknown",
+                "therapy_area": "General",
+                "region": "Global",
+                "population": "General",
+                "formulation": "Any",
+            }
         print(f"Clarification parsing failed: {e}")
     
     # Fallback: Dynamic extraction from query
@@ -242,6 +271,7 @@ def dispatch_workers(state: PortfolioState) -> list:
 # Worker nodes
 def iqvia_worker(state: WorkerInputState) -> dict:
     """IQVIA market intelligence worker."""
+    time.sleep(WORKER_DELAY)  # Simulate API call time
     query = state.get("query", "")
     region = state.get("region")
     therapy_area = state.get("therapy_area")
@@ -260,6 +290,7 @@ def iqvia_worker(state: WorkerInputState) -> dict:
 
 def trials_worker(state: WorkerInputState) -> dict:
     """Clinical trials worker."""
+    time.sleep(WORKER_DELAY)  # Simulate API call time
     query = state.get("query", "")
     molecule = state.get("molecule")
     
@@ -276,6 +307,7 @@ def trials_worker(state: WorkerInputState) -> dict:
 
 def patents_worker(state: WorkerInputState) -> dict:
     """Patent landscape worker."""
+    time.sleep(WORKER_DELAY)  # Simulate API call time
     query = state.get("query", "")
     molecule = state.get("molecule")
     
@@ -292,6 +324,7 @@ def patents_worker(state: WorkerInputState) -> dict:
 
 def exim_worker(state: WorkerInputState) -> dict:
     """Import/export data worker."""
+    time.sleep(WORKER_DELAY)  # Simulate API call time
     query = state.get("query", "")
     region = state.get("region")
     molecule = state.get("molecule")
@@ -310,6 +343,7 @@ def exim_worker(state: WorkerInputState) -> dict:
 
 def internal_worker(state: WorkerInputState) -> dict:
     """Internal documents worker."""
+    time.sleep(WORKER_DELAY)  # Simulate API call time
     query = state.get("query", "")
     therapy_area = state.get("therapy_area")
     
@@ -326,6 +360,7 @@ def internal_worker(state: WorkerInputState) -> dict:
 
 def web_worker(state: WorkerInputState) -> dict:
     """Web search worker."""
+    time.sleep(WORKER_DELAY)  # Simulate API call time
     query = state.get("query", "")
     molecule = state.get("molecule")
     
@@ -342,6 +377,7 @@ def web_worker(state: WorkerInputState) -> dict:
 
 def synthesize_evidence(state: PortfolioState, config: RunnableConfig) -> dict:
     """Merge worker results and apply heuristics."""
+    time.sleep(SYNTHESIS_DELAY)  # Simulate processing time
     market_data = state.get("market_data", [])
     trials_data = state.get("trials_data", [])
     patent_data = state.get("patent_data", [])
@@ -365,6 +401,7 @@ def synthesize_evidence(state: PortfolioState, config: RunnableConfig) -> dict:
 
 def generate_story(state: PortfolioState, config: RunnableConfig) -> dict:
     """Generate innovation product story."""
+    time.sleep(STORY_DELAY)  # Simulate processing time
     configurable = PortfolioConfiguration.from_runnable_config(config)
     
     llm = ChatGroq(
@@ -372,6 +409,7 @@ def generate_story(state: PortfolioState, config: RunnableConfig) -> dict:
         temperature=0.7,
         max_retries=2,
         api_key=os.getenv("GROQ_API_KEY"),
+        streaming=False,
     )
     
     # Prepare summaries
@@ -407,7 +445,20 @@ def generate_story(state: PortfolioState, config: RunnableConfig) -> dict:
         patent_insights=patent_summary,
     )
     
-    response = llm.invoke(prompt)
+    try:
+        response = llm.invoke(prompt)
+    except Exception as e:
+        err_text = str(e)
+        if "rate_limit" in err_text.lower() or "rate limit" in err_text.lower():
+            return {
+                "innovation_story": (
+                    "Unable to generate the Innovation Story due to Groq token rate limiting.\n\n"
+                    "Try again in a few minutes, or use a smaller model for Portfolio Strategist (default is now `llama-3.1-8b-instant`)."
+                ),
+                "current_phase": "complete",
+                "report_ready": True,
+            }
+        raise
     
     return {
         "innovation_story": response.content,
@@ -418,6 +469,7 @@ def generate_story(state: PortfolioState, config: RunnableConfig) -> dict:
 
 def finalize_response(state: PortfolioState, config: RunnableConfig) -> dict:
     """Create final response message."""
+    time.sleep(FINALIZE_DELAY)  # Brief pause before final output
     molecule = state.get("molecule", "Unknown")
     therapy_area = state.get("therapy_area", "General")
     region = state.get("region", "Global")

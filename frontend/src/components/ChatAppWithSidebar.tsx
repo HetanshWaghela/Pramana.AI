@@ -31,12 +31,12 @@ export const ChatAppWithSidebar: React.FC = () => {
     const [selectedAgentId, setSelectedAgentId] = useState(DEFAULT_AGENT);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const hasFinalizeEventOccurredRef = useRef(false);
-    
+
     // Sidebar state
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [currentChatId, setCurrentChatId] = useState<string | undefined>(undefined);
     const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
-    
+
     // Historical messages loaded from backend (for viewing old chats)
     const [loadedMessages, setLoadedMessages] = useState<Message[]>([]);
     const [isViewingHistory, setIsViewingHistory] = useState(false);
@@ -52,16 +52,16 @@ export const ChatAppWithSidebar: React.FC = () => {
     useEffect(() => {
         const token = localStorage.getItem('access_token');
         const userStr = localStorage.getItem('user');
-        
+
         console.log('Auth check - Token:', token ? 'exists' : 'missing');
         console.log('Auth check - User:', userStr ? 'exists' : 'missing');
-        
+
         if (!token || !userStr) {
             console.log('Not authenticated, redirecting to login');
             navigate('/login');
             return;
         }
-        
+
         try {
             const user = JSON.parse(userStr);
             setUserInfo({
@@ -83,10 +83,10 @@ export const ChatAppWithSidebar: React.FC = () => {
                 console.log('Not authenticated yet, skipping chat load');
                 return;
             }
-            
+
             const token = localStorage.getItem('access_token');
             console.log('Loading chats with token:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-            
+
             try {
                 const chats = await chatService.getUserChats();
                 console.log('Loaded chats:', chats);
@@ -224,6 +224,60 @@ export const ChatAppWithSidebar: React.FC = () => {
                     };
                     hasFinalizeEventOccurredRef.current = true;
                 }
+            } else if (selectedAgentId === AgentId.PORTFOLIO_STRATEGIST) {
+                // Portfolio Strategist event handling
+                if ('clarify_scope' in event) {
+                    processedEvent = {
+                        title: 'Analyzing Request',
+                        data: 'Extracting molecule, therapy area, and market scope...',
+                    };
+                } else if ('iqvia_worker' in event) {
+                    processedEvent = {
+                        title: 'Market Intelligence',
+                        data: 'Querying IQVIA for market data and competitive landscape...',
+                    };
+                } else if ('trials_worker' in event) {
+                    processedEvent = {
+                        title: 'Clinical Trials',
+                        data: 'Searching ClinicalTrials.gov for relevant studies...',
+                    };
+                } else if ('patents_worker' in event) {
+                    processedEvent = {
+                        title: 'Patent Landscape',
+                        data: 'Analyzing USPTO and Orange Book patent data...',
+                    };
+                } else if ('exim_worker' in event) {
+                    processedEvent = {
+                        title: 'Trade Analysis',
+                        data: 'Evaluating import/export and supply chain data...',
+                    };
+                } else if ('internal_worker' in event) {
+                    processedEvent = {
+                        title: 'Internal Documents',
+                        data: 'Searching internal knowledge base...',
+                    };
+                } else if ('web_worker' in event) {
+                    processedEvent = {
+                        title: 'Web Research',
+                        data: 'Gathering competitive and regulatory intelligence...',
+                    };
+                } else if ('synthesize_evidence' in event) {
+                    processedEvent = {
+                        title: 'Synthesizing Evidence',
+                        data: 'Applying decision heuristics and calculating opportunity scores...',
+                    };
+                } else if ('generate_story' in event) {
+                    processedEvent = {
+                        title: 'Generating Innovation Story',
+                        data: 'Creating executive-ready narrative...',
+                    };
+                } else if ('finalize_response' in event) {
+                    processedEvent = {
+                        title: 'Finalizing Report',
+                        data: 'Composing comprehensive portfolio analysis...',
+                    };
+                    hasFinalizeEventOccurredRef.current = true;
+                }
             }
 
             if (
@@ -262,14 +316,23 @@ export const ChatAppWithSidebar: React.FC = () => {
         }
     }, [thread.messages, loadedMessages]);
 
+    // Track previous loading state to detect transitions
+    const prevIsLoadingRef = useRef(thread.isLoading);
+
     useEffect(() => {
+        // Detect loading just finished (true -> false transition)
+        const loadingJustFinished = prevIsLoadingRef.current && !thread.isLoading;
+        prevIsLoadingRef.current = thread.isLoading;
+
+        // Save activity timeline when loading finishes and we have events
         if (
-            hasFinalizeEventOccurredRef.current &&
-            !thread.isLoading &&
-            thread.messages.length > 0
+            loadingJustFinished &&
+            thread.messages.length > 0 &&
+            processedEventsTimeline.length > 0
         ) {
             const lastMessage = thread.messages[thread.messages.length - 1];
             if (lastMessage && lastMessage.type === 'ai' && lastMessage.id) {
+                console.log('Saving activity timeline for message:', lastMessage.id, 'Events:', processedEventsTimeline.length);
                 setHistoricalActivities((prev) => ({
                     ...prev,
                     [lastMessage.id!]: [...processedEventsTimeline],
@@ -283,10 +346,10 @@ export const ChatAppWithSidebar: React.FC = () => {
     useEffect(() => {
         if (thread.messages.length > 0 && currentChatId) {
             const firstHumanMessage = thread.messages.find(m => m.type === 'human');
-            const title = firstHumanMessage 
+            const title = firstHumanMessage
                 ? String(firstHumanMessage.content).slice(0, 30) + (String(firstHumanMessage.content).length > 30 ? '...' : '')
                 : 'New Chat';
-            
+
             setChatHistory(prev => {
                 const existingIndex = prev.findIndex(c => c.id === currentChatId);
                 if (existingIndex >= 0) {
@@ -339,14 +402,14 @@ export const ChatAppWithSidebar: React.FC = () => {
                 const newChatId = uuidv4();
                 chatId = newChatId;
                 setCurrentChatId(newChatId);
-                
+
                 // Create chat in backend
                 try {
                     await chatService.createChat(newChatId, submittedInputValue.slice(0, 50));
                 } catch (error) {
                     console.error('Failed to create chat:', error);
                 }
-                
+
                 setChatHistory(prev => [{
                     id: newChatId,
                     title: submittedInputValue.slice(0, 30) + (submittedInputValue.length > 30 ? '...' : ''),
@@ -361,8 +424,8 @@ export const ChatAppWithSidebar: React.FC = () => {
             hasFinalizeEventOccurredRef.current = false;
 
             // Include loaded messages if viewing history (continuing a previous chat)
-            const existingMessages = isViewingHistory && loadedMessages.length > 0 
-                ? loadedMessages 
+            const existingMessages = isViewingHistory && loadedMessages.length > 0
+                ? loadedMessages
                 : (thread.messages || []);
 
             const newMessages: Message[] = [
@@ -429,12 +492,12 @@ export const ChatAppWithSidebar: React.FC = () => {
         try {
             // Load chat with messages from backend
             const chat = await chatService.getChat(chatId);
-            
+
             setCurrentChatId(chatId);
             setProcessedEventsTimeline([]);
             setHistoricalActivities({});
             hasFinalizeEventOccurredRef.current = false;
-            
+
             // Load messages from chat history
             if (chat.messages && chat.messages.length > 0) {
                 const formattedMessages: Message[] = chat.messages.map(m => ({
@@ -442,14 +505,14 @@ export const ChatAppWithSidebar: React.FC = () => {
                     content: m.content,
                     id: m.message_id || String(m.id)
                 }));
-                
+
                 // Set loaded messages to display them
                 setLoadedMessages(formattedMessages);
                 setIsViewingHistory(true);
-                
+
                 // Update chat history state
-                setChatHistory(prev => prev.map(c => 
-                    c.id === chatId 
+                setChatHistory(prev => prev.map(c =>
+                    c.id === chatId
                         ? { ...c, messages: formattedMessages }
                         : c
                 ));
@@ -489,22 +552,22 @@ export const ChatAppWithSidebar: React.FC = () => {
 
         try {
             const blob = await chatService.exportChatToPdf(currentChatId);
-            
+
             // Create download link
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            
+
             // Get chat title for filename
             const chat = chatHistory.find(c => c.id === currentChatId);
             const title = chat?.title || 'Chat';
             const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             link.download = `${safeTitle}_${currentChatId.slice(0, 8)}.pdf`;
-            
+
             // Trigger download
             document.body.appendChild(link);
             link.click();
-            
+
             // Cleanup
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);

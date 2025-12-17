@@ -125,9 +125,8 @@ export const InputForm: React.FC<InputFormProps> = ({
       )}
 
       <div
-        className={`flex flex-row items-center justify-between rounded-2xl ${
-          hasHistory ? '' : 'rounded-bl-md'
-        } break-words min-h-7 bg-white border-3 border-black px-4 pt-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]`}
+        className={`flex flex-row items-center justify-between rounded-2xl ${hasHistory ? '' : 'rounded-bl-md'
+          } break-words min-h-7 bg-white border-3 border-black px-4 pt-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]`}
       >
         <Textarea
           value={internalInputValue}
@@ -153,11 +152,10 @@ export const InputForm: React.FC<InputFormProps> = ({
             <Button
               type="submit"
               variant="ghost"
-              className={`${
-                isSubmitDisabled
-                  ? 'text-gray-400'
-                  : 'text-black hover:text-gray-700 hover:bg-green-100'
-              } p-2 cursor-pointer rounded-full transition-all duration-200 text-base`}
+              className={`${isSubmitDisabled
+                ? 'text-gray-400'
+                : 'text-black hover:text-gray-700 hover:bg-green-100'
+                } p-2 cursor-pointer rounded-full transition-all duration-200 text-base`}
               disabled={isSubmitDisabled}
             >
               <Send className="h-5 w-5" />
@@ -175,7 +173,7 @@ export const InputForm: React.FC<InputFormProps> = ({
                 Agent
               </div>
               <Select value={selectedAgent} onValueChange={onAgentChange}>
-                <SelectTrigger className="w-[140px] bg-transparent border-none cursor-pointer font-semibold text-gray-900">
+                <SelectTrigger className="w-[220px] bg-transparent border-none cursor-pointer font-semibold text-gray-900">
                   <SelectValue placeholder="Agent" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-2 border-black text-gray-900 cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -235,7 +233,7 @@ export const InputForm: React.FC<InputFormProps> = ({
               Model
             </div>
             <Select value={model} onValueChange={handleModelChange}>
-              <SelectTrigger className="w-[140px] bg-transparent border-none cursor-pointer font-semibold text-gray-900">
+              <SelectTrigger className="w-[180px] bg-transparent border-none cursor-pointer font-semibold text-gray-900">
                 <SelectValue placeholder="Model" />
               </SelectTrigger>
               <SelectContent className="bg-white border-2 border-black text-gray-900 cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -243,11 +241,14 @@ export const InputForm: React.FC<InputFormProps> = ({
                   <SelectItem
                     key={modelInfo.id}
                     value={modelInfo.id}
-                    className="hover:bg-green-100 focus:bg-green-100 cursor-pointer font-medium"
+                    className="group hover:bg-green-100 focus:bg-green-100 cursor-pointer font-medium py-2"
                   >
-                    <div className="flex items-center">
-                      {getModelIcon(modelInfo.icon, modelInfo.iconColor)}
-                      {modelInfo.name}
+                    <div className="flex flex-col">
+                      <div className="flex items-center">
+                        {getModelIcon(modelInfo.icon, modelInfo.iconColor)}
+                        {modelInfo.name}
+                      </div>
+                      <span className="text-xs text-gray-500 ml-6 hidden group-hover:block">{modelInfo.description}</span>
                     </div>
                   </SelectItem>
                 ))}

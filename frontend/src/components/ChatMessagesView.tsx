@@ -1,33 +1,35 @@
-import type React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Message } from '@langchain/langgraph-sdk';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Copy, CopyCheck, Sparkles, Download, BarChart3 } from 'lucide-react';
+import { Copy, CopyCheck, Download, BarChart3, GitBranch } from 'lucide-react';
 import { InputForm } from '@/components/InputForm';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import {
-  ActivityTimeline,
-  ProcessedEvent,
-} from '@/components/ActivityTimeline'; // Assuming ActivityTimeline is in the same dir or adjust path
+import type { ProcessedEvent } from '@/components/ActivityTimeline';
+import { SequentialThinkingFlow } from '@/components/SequentialThinkingFlow';
+import { AiBubbleWrapper } from '@/components/AiBubbleWrapper';
 import { AVAILABLE_AGENTS } from '@/types/agents';
 import { ToolMessageDisplay } from '@/components/ToolMessageDisplay';
+import { motion } from 'framer-motion';
 import {
   extractToolCallsFromMessage,
   findToolMessageForCall,
 } from '@/types/messages';
 import { ToolCall } from '@/types/tools';
 import { AgentId } from '@/types/agents';
-import chatService from '@/lib/chatService';
-import { 
-  OpportunityRadar, 
-  MarketGrowth, 
-  PatentTimeline, 
-  CompetitionHeatmap, 
-  Signals 
+import {
+  OpportunityRadar,
+  MarketGrowth,
+  PatentTimeline,
+  CompetitionHeatmap,
+  Signals
 } from '@/components/insights';
+import { FollowUpSuggestions } from '@/components/FollowUpSuggestions';
+import { InlineChatGraph } from '@/components/InlineChatGraph';
+import { ThinkingDropdown } from '@/components/ThinkingDropdown';
+import { WorkflowModal } from '@/components/workflow';
 
 // Group messages to combine AI responses with their tool calls and results
 interface MessageGroup {
@@ -47,7 +49,7 @@ const groupMessages = (messages: Message[]): MessageGroup[] => {
     if (message.type === 'human') {
       // Human messages are always standalone
       groups.push({
-        id: message.id || `human-${Date.now()}`,
+        id: `group-${groups.length}-human`,
         type: 'human',
         messages: [message],
         primaryMessage: message,
@@ -60,7 +62,7 @@ const groupMessages = (messages: Message[]): MessageGroup[] => {
       if (!currentGroup || currentGroup.type !== 'ai_complete') {
         // Create new AI group
         currentGroup = {
-          id: message.id || `ai-${Date.now()}`,
+          id: `group-${groups.length}-ai`,
           type: 'ai_complete',
           messages: [message],
           primaryMessage: message,
@@ -92,6 +94,7 @@ const groupMessages = (messages: Message[]): MessageGroup[] => {
 
   return groups;
 };
+
 
 // Markdown components (from former ReportView.tsx)
 const mdComponents = {
@@ -264,6 +267,146 @@ const mdComponents = {
   ),
 };
 
+// ProgressiveRevealMarkdown: Reveals content section by section with staggered animations
+// Splits content by markdown headers/sections and reveals them progressively
+interface ProgressiveRevealMarkdownProps {
+  content: string;
+  mdComponents: typeof mdComponents;
+  isLastMessage: boolean;
+  isLoading: boolean;
+  onAnimationComplete?: () => void;
+}
+
+// Helper to split markdown content into logical sections
+const splitIntoSections = (content: string): string[] => {
+  // Split by headers (##, ###) or horizontal rules (---) while keeping the delimiter
+  const sections: string[] = [];
+  const lines = content.split('\n');
+  let currentSection = '';
+  
+  for (const line of lines) {
+    // Check if this line starts a new section (header or horizontal rule)
+    const isNewSection = /^#{1,3}\s/.test(line) || /^---+\s*$/.test(line);
+    
+    if (isNewSection && currentSection.trim()) {
+      sections.push(currentSection.trim());
+      currentSection = line + '\n';
+    } else {
+      currentSection += line + '\n';
+    }
+  }
+  
+  // Push the last section
+  if (currentSection.trim()) {
+    sections.push(currentSection.trim());
+  }
+  
+  // If we only got one section, try to split by double newlines for paragraphs
+  if (sections.length <= 1 && content.length > 500) {
+    const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
+    // Group into chunks of reasonable size
+    const chunks: string[] = [];
+    let currentChunk = '';
+    for (const para of paragraphs) {
+      if (currentChunk.length + para.length > 800 && currentChunk) {
+        chunks.push(currentChunk.trim());
+        currentChunk = para;
+      } else {
+        currentChunk += (currentChunk ? '\n\n' : '') + para;
+      }
+    }
+    if (currentChunk) {
+      chunks.push(currentChunk.trim());
+    }
+    return chunks.length > 1 ? chunks : sections;
+  }
+  
+  return sections;
+};
+
+const ProgressiveRevealMarkdown: React.FC<ProgressiveRevealMarkdownProps> = ({
+  content,
+  mdComponents: mdComponentsProp,
+  isLastMessage,
+  isLoading: _isLoading,
+  onAnimationComplete,
+}) => {
+  const [visibleSections, setVisibleSections] = useState<number>(0);
+  const sections = React.useMemo(() => splitIntoSections(content), [content]);
+  const totalSections = sections.length;
+  const prevContentRef = React.useRef<string>('');
+  
+  // Reset visible sections when content changes significantly (new message)
+  useEffect(() => {
+    const contentChanged = content !== prevContentRef.current;
+    const isNewContent = contentChanged && prevContentRef.current.length === 0;
+    const isCompletelyDifferent = contentChanged && !content.startsWith(prevContentRef.current.slice(0, 50));
+    
+    if (isNewContent || isCompletelyDifferent) {
+      setVisibleSections(0);
+    }
+    prevContentRef.current = content;
+  }, [content]);
+
+  // Progressively reveal sections
+  useEffect(() => {
+    if (visibleSections < totalSections) {
+      // Stagger delay: first section faster, subsequent sections slower
+      const delay = visibleSections === 0 ? 50 : 150 + (visibleSections * 30);
+      const timer = setTimeout(() => {
+        setVisibleSections(prev => Math.min(prev + 1, totalSections));
+      }, delay);
+      return () => clearTimeout(timer);
+    } else if (visibleSections >= totalSections && onAnimationComplete) {
+      // All sections visible, animation complete
+      const timer = setTimeout(onAnimationComplete, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [visibleSections, totalSections, onAnimationComplete]);
+
+  // For non-last messages or short content, just show everything
+  if (!isLastMessage || totalSections <= 1) {
+    return (
+      <div className="relative">
+        <ReactMarkdown components={mdComponentsProp}>
+          {content}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative space-y-0">
+      {sections.map((section, index) => {
+        const isVisible = index < visibleSections;
+        const isRevealing = index === visibleSections - 1;
+        
+        return (
+          <motion.div
+            key={`section-${index}`}
+            animate={{ 
+              opacity: isVisible ? 1 : 0, 
+              y: isVisible ? 0 : 6,
+            }}
+            transition={{
+              duration: 0.35,
+              ease: [0.4, 0, 0.2, 1],
+            }}
+            style={{ 
+              display: isVisible ? 'block' : 'none',
+            }}
+            className={isRevealing ? 'relative' : ''}
+          >
+            <ReactMarkdown components={mdComponentsProp}>
+              {section}
+            </ReactMarkdown>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
 // Props for HumanMessageBubble
 interface HumanMessageBubbleProps {
   group: MessageGroup;
@@ -277,7 +420,13 @@ const HumanMessageBubble: React.FC<HumanMessageBubbleProps> = ({
 }) => {
   const message = group.primaryMessage;
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{
+        duration: 0.3,
+        ease: [0.4, 0, 0.2, 1],
+      }}
       className={`text-gray-900 rounded-2xl break-words min-h-7 bg-yellow-300 border-2 border-black max-w-[100%] sm:max-w-[90%] px-4 pt-3 rounded-br-md shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] font-medium`}
     >
       <ReactMarkdown components={mdComponents}>
@@ -285,7 +434,7 @@ const HumanMessageBubble: React.FC<HumanMessageBubbleProps> = ({
           ? message.content
           : JSON.stringify(message.content)}
       </ReactMarkdown>
-    </div>
+    </motion.div>
   );
 };
 
@@ -301,6 +450,8 @@ interface AiMessageBubbleProps {
   copiedMessageId: string | null;
   selectedAgentId: string;
   allMessages: Message[];
+  userQuery: string;
+  onSuggestionClick: (text: string) => void;
 }
 
 // AiMessageBubble Component
@@ -315,9 +466,15 @@ const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
   copiedMessageId,
   selectedAgentId,
   allMessages,
+  userQuery,
+  onSuggestionClick,
 }) => {
   // Tool message state
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
+  // Inline graph visibility state
+  const [showInlineGraph, setShowInlineGraph] = useState(false);
+  // Track if typewriter animation is complete
+  const [typewriterComplete, setTypewriterComplete] = useState(false);
 
   const toggleTool = (toolId: string) => {
     setExpandedTools((prev) => {
@@ -331,19 +488,23 @@ const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
     });
   };
 
-  // Determine which activity events to show and if it's for a live loading message
-  const activityForThisBubble =
-    isLastGroup && isOverallLoading ? liveActivity : historicalActivity;
-  const isLiveActivityForThisBubble = isLastGroup && isOverallLoading;
+  // Determine which activity events to show
+  // Use historical activity if available, otherwise fallback to live activity
+  const activityForThisBubble = historicalActivity ?? (isLastGroup ? liveActivity : undefined);
+
+  const isActivityLoading = isOverallLoading && isLastGroup && !historicalActivity;
 
   // Get current agent configuration
   const currentAgent = AVAILABLE_AGENTS.find(
     (agent) => agent.id === selectedAgentId
   );
+
   const shouldShowActivity =
     currentAgent?.showActivityTimeline &&
-    (isLiveActivityForThisBubble ||
-      (activityForThisBubble && activityForThisBubble.length > 0));
+    (
+      isActivityLoading ||
+      (activityForThisBubble && activityForThisBubble.length > 0)
+    );
 
   // Check if we should hide tool messages for DeepResearcher
   const shouldHideToolMessages = selectedAgentId === AgentId.DEEP_RESEARCHER;
@@ -362,25 +523,23 @@ const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
     .filter((content) => content.trim())
     .join('\n\n');
 
-  return (
-    <div
-      className={`relative break-words flex flex-col group max-w-[85%] md:max-w-[80%] w-full rounded-2xl p-5 bg-green-50 border-2 border-black text-gray-900 rounded-bl-md min-h-[56px] shadow-[4px_4px_0px_0px_rgba(74,222,128,0.6)]`}
-    >
-      {/* AI Response Header */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-green-200">
-        <div className="w-6 h-6 bg-green-400 rounded-lg border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-          <Sparkles className="w-3 h-3 text-black" />
-        </div>
-        <span className="text-sm font-bold text-gray-700">Pramana AI</span>
-      </div>
+  const isPortfolioStrategist = selectedAgentId === AgentId.PORTFOLIO_STRATEGIST;
 
+  // IMPORTANT: group.messages can include interleaved tool messages.
+  // We must compute the last AI message index among AI messages only.
+  const aiMessages = group.messages.filter((m) => m.type === 'ai');
+
+  return (
+    <AiBubbleWrapper
+      isPortfolioStrategist={isPortfolioStrategist}
+      agentName="Pramana AI"
+    >
       {shouldShowActivity && (
-        <div className="mb-3 border-b-2 border-green-200 pb-3 text-xs">
-          <ActivityTimeline
-            processedEvents={activityForThisBubble || []}
-            isLoading={isLiveActivityForThisBubble}
-          />
-        </div>
+        <SequentialThinkingFlow
+          events={activityForThisBubble || []}
+          isLoading={isActivityLoading}
+          className="mb-3"
+        />
       )}
 
       {/* Render messages in chronological order */}
@@ -392,15 +551,32 @@ const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
             typeof message.content === 'string' &&
             message.content.trim();
 
+          const aiIndex = aiMessages.findIndex((m) => m.id === message.id);
+          let lastAiIndexInGroup = -1;
+          for (let i = group.messages.length - 1; i >= 0; i--) {
+            if (group.messages[i].type === 'ai') {
+              lastAiIndexInGroup = i;
+              break;
+            }
+          }
+          const isLastAiMessageInGroup =
+            aiIndex !== -1
+              ? aiIndex === aiMessages.length - 1
+              : index === lastAiIndexInGroup;
+
           return (
             <div key={message.id || `ai-${index}`} className="space-y-3">
-              {/* Render AI content if present */}
+              {/* Render AI content with progressive reveal animation */}
               {hasContent && (
-                <ReactMarkdown components={mdComponents}>
-                  {typeof message.content === 'string'
+                <ProgressiveRevealMarkdown
+                  content={typeof message.content === 'string'
                     ? message.content
                     : JSON.stringify(message.content)}
-                </ReactMarkdown>
+                  mdComponents={mdComponents}
+                  isLastMessage={isLastGroup && isLastAiMessageInGroup}
+                  isLoading={isOverallLoading}
+                  onAnimationComplete={() => setTypewriterComplete(true)}
+                />
               )}
 
               {/* Render tool calls immediately after the AI message that triggered them */}
@@ -443,7 +619,25 @@ const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
           )}
         </Button>
       )}
-    </div>
+
+      {/* Inline Graph Display */}
+      <InlineChatGraph
+        isVisible={showInlineGraph}
+        onClose={() => setShowInlineGraph(false)}
+        topic={userQuery ? userQuery.split(' ').slice(0, 4).join(' ') : 'Portfolio'}
+      />
+
+      {/* Follow-up Suggestions - only show after typewriter animation completes */}
+      {!shouldHideCopyButton && combinedTextContent && typewriterComplete && (
+        <FollowUpSuggestions
+          aiResponse={combinedTextContent}
+          userQuery={userQuery}
+          onSuggestionClick={onSuggestionClick}
+          onGraphClick={() => setShowInlineGraph(true)}
+          isLoading={isOverallLoading}
+        />
+      )}
+    </AiBubbleWrapper>
   );
 };
 
@@ -481,8 +675,22 @@ export function ChatMessagesView({
 }: ChatMessagesViewProps) {
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [showGraphs, setShowGraphs] = useState(false);
-  const [graphs, setGraphs] = useState<Record<string, string> | null>(null);
+  // Graph state - used for future backend integration
+  const [, setGraphs] = useState<Record<string, string> | null>(null);
   const [loadingGraphs, setLoadingGraphs] = useState(false);
+  // Workflow visualization state
+  const [showWorkflow, setShowWorkflow] = useState(false);
+
+  // Get the latest user query for workflow visualization
+  const getLatestUserQuery = useCallback((): string => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].type === 'human') {
+        const content = messages[i].content;
+        return typeof content === 'string' ? content : '';
+      }
+    }
+    return '';
+  }, [messages]);
 
   const handleCopy = async (text: string, messageId: string) => {
     try {
@@ -496,10 +704,10 @@ export function ChatMessagesView({
 
   const handleViewGraphs = async () => {
     if (!currentChatId) return;
-    
+
     // Simply show the graphs modal with interactive charts
     setShowGraphs(true);
-    
+
     // Optional: fetch data from backend if available
     // Uncomment this if backend provides data for charts
     /*
@@ -516,7 +724,8 @@ export function ChatMessagesView({
     */
   };
 
-  const downloadGraph = (graphName: string, base64Data: string) => {
+  // Graph download handler - used when implementing server-side graph generation
+  const handleDownloadGraph = (graphName: string, base64Data: string) => {
     const link = document.createElement('a');
     link.href = `data:image/png;base64,${base64Data}`;
     link.download = `${graphName}_${currentChatId?.slice(0, 8)}.png`;
@@ -524,15 +733,57 @@ export function ChatMessagesView({
     link.click();
     document.body.removeChild(link);
   };
+  // Export for potential use
+  void handleDownloadGraph;
+  void setGraphs;
+  void setLoadingGraphs;
 
   // Group messages to combine related AI responses and tool calls
   const messageGroups = groupMessages(messages);
+
+  // Helper: Find the user query that preceded a given AI message group
+  const findUserQueryForGroup = (groupIndex: number): string => {
+    // Look backwards from the current group to find the last human message
+    for (let i = groupIndex - 1; i >= 0; i--) {
+      if (messageGroups[i].type === 'human') {
+        const content = messageGroups[i].primaryMessage.content;
+        return typeof content === 'string' ? content : '';
+      }
+    }
+    // If no previous human message found, check the first human message
+    const firstHuman = messageGroups.find(g => g.type === 'human');
+    if (firstHuman) {
+      const content = firstHuman.primaryMessage.content;
+      return typeof content === 'string' ? content : '';
+    }
+    return '';
+  };
+
+  // Handler for when user clicks a follow-up suggestion
+  const handleSuggestionClick = (text: string) => {
+    // Submit the suggestion as a new user message
+    // Using default model/effort settings
+    onSubmit(text, 'medium', 'llama-3.3-70b-versatile', selectedAgentId);
+  };
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden relative">
       {/* Action buttons - only show if we have messages and chatId */}
       {messages.length > 0 && currentChatId && (
         <div className="absolute top-4 right-4 z-10 flex gap-2">
+          {/* Workflow Visualization Button - only for Portfolio Strategist */}
+          {selectedAgentId === AgentId.PORTFOLIO_STRATEGIST && (
+            <Button
+              onClick={() => setShowWorkflow(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all font-bold"
+              title="View agent workflow visualization"
+            >
+              <GitBranch className="h-4 w-4 mr-2" />
+              Workflow
+            </Button>
+          )}
           <Button
             onClick={handleViewGraphs}
             variant="outline"
@@ -559,6 +810,14 @@ export function ChatMessagesView({
         </div>
       )}
 
+      {/* Workflow Visualization Modal */}
+      <WorkflowModal
+        currentQuery={getLatestUserQuery()}
+        isOpen={showWorkflow}
+        onClose={() => setShowWorkflow(false)}
+        autoplay={true}
+      />
+
       {/* Graphs Modal/Display */}
       {showGraphs && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowGraphs(false)}>
@@ -574,42 +833,42 @@ export function ChatMessagesView({
                 Close
               </Button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Opportunity Radar Chart */}
-              <OpportunityRadar 
+              <OpportunityRadar
                 onDownload={() => {
                   // Optional: implement download as PNG
                   console.log('Download Opportunity Radar');
-                }} 
+                }}
               />
 
               {/* Market Growth Chart */}
-              <MarketGrowth 
+              <MarketGrowth
                 onDownload={() => {
                   console.log('Download Market Growth');
-                }} 
+                }}
               />
 
               {/* Patent Timeline Chart */}
-              <PatentTimeline 
+              <PatentTimeline
                 onDownload={() => {
                   console.log('Download Patent Timeline');
-                }} 
+                }}
               />
 
               {/* Competition Heatmap Chart */}
-              <CompetitionHeatmap 
+              <CompetitionHeatmap
                 onDownload={() => {
                   console.log('Download Competition Heatmap');
-                }} 
+                }}
               />
 
               {/* Signals Chart */}
-              <Signals 
+              <Signals
                 onDownload={() => {
                   console.log('Download Signals');
-                }} 
+                }}
               />
             </div>
           </div>
@@ -623,9 +882,8 @@ export function ChatMessagesView({
             return (
               <div key={group.id} className="space-y-3">
                 <div
-                  className={`flex items-start gap-3 ${
-                    group.type === 'human' ? 'justify-end' : ''
-                  }`}
+                  className={`flex items-start gap-3 ${group.type === 'human' ? 'justify-end' : ''
+                    }`}
                 >
                   {group.type === 'human' ? (
                     <HumanMessageBubble
@@ -646,6 +904,8 @@ export function ChatMessagesView({
                       copiedMessageId={copiedMessageId}
                       selectedAgentId={selectedAgentId}
                       allMessages={messages}
+                      userQuery={findUserQueryForGroup(index)}
+                      onSuggestionClick={handleSuggestionClick}
                     />
                   )}
                 </div>
@@ -656,35 +916,29 @@ export function ChatMessagesView({
             (messageGroups.length === 0 ||
               messageGroups[messageGroups.length - 1].type === 'human') && (
               <div className="flex items-start gap-3 mt-3">
-                {(() => {
-                  const currentAgent = AVAILABLE_AGENTS.find(
-                    (agent) => agent.id === selectedAgentId
-                  );
-                  const shouldShowActivity = currentAgent?.showActivityTimeline;
-
-                  if (shouldShowActivity) {
-                    return (
-                      <div className="relative group max-w-[85%] md:max-w-[80%] rounded-2xl p-4 shadow-brutal-sm break-words bg-white text-gray-900 border-2 border-black w-full min-h-[56px]">
-                        <div className="text-xs">
-                          <ActivityTimeline
-                            processedEvents={liveActivityEvents}
-                            isLoading={true}
-                          />
-                        </div>
-                      </div>
-                    );
-                  } else {
-                    return (
-                      <div className="flex items-center justify-start h-full min-h-[56px]">
-                        <div className="flex justify-center items-center gap-1.5 bg-white border-2 border-black rounded-xl px-4 py-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                          <div className="w-2.5 h-2.5 bg-[#4ADE80] rounded-full animate-bounce [animation-delay:-0.32s]"></div>
-                          <div className="w-2.5 h-2.5 bg-[#FDE047] rounded-full animate-bounce [animation-delay:-0.16s]"></div>
-                          <div className="w-2.5 h-2.5 bg-[#F9A8D4] rounded-full animate-bounce"></div>
-                        </div>
-                      </div>
-                    );
-                  }
-                })()}
+                {/* Refactored loading block logic */}
+                {selectedAgentId === AgentId.PORTFOLIO_STRATEGIST ? (
+                  <AiBubbleWrapper
+                    isPortfolioStrategist={true}
+                    agentName="Pramana AI"
+                  >
+                    <SequentialThinkingFlow
+                      events={liveActivityEvents}
+                      isLoading={true}
+                    />
+                  </AiBubbleWrapper>
+                ) : (
+                  // Use ThinkingDropdown for Chat Assistant and other non-activity agents
+                  <AiBubbleWrapper
+                    isPortfolioStrategist={false}
+                    agentName="Pramana AI"
+                  >
+                    <ThinkingDropdown
+                      isThinking={true}
+                      thinkingTitle="Analyzing your request"
+                    />
+                  </AiBubbleWrapper>
+                )}
               </div>
             )}
         </div>
