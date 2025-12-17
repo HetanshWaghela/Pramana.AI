@@ -4,6 +4,7 @@ import { ChatApp } from '@/components/ChatApp';
 import { ChatAppWithSidebar } from '@/components/ChatAppWithSidebar';
 import { LoginPage } from '@/components/auth/LoginPage';
 import { RegisterPage } from '@/components/auth/RegisterPage';
+import { WorkflowPage } from '@/components/workflow';
 
 export default function App() {
     return (
@@ -13,6 +14,7 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/app" element={<ChatAppWithSidebar />} />
             <Route path="/chat" element={<ChatApp />} /> {/* Legacy route without sidebar */}
+            <Route path="/workflow" element={<WorkflowPage />} /> {/* Standalone workflow visualization demo */}
         </Routes>
     );
 }

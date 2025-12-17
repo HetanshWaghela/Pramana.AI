@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Message } from '@langchain/langgraph-sdk';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Copy, CopyCheck, Download, BarChart3 } from 'lucide-react';
+import { Copy, CopyCheck, Download, BarChart3, GitBranch } from 'lucide-react';
 import { InputForm } from '@/components/InputForm';
 import { Button } from '@/components/ui/button';
 import ReactMarkdown from 'react-markdown';
@@ -29,6 +29,7 @@ import {
 import { FollowUpSuggestions } from '@/components/FollowUpSuggestions';
 import { InlineChatGraph } from '@/components/InlineChatGraph';
 import { ThinkingDropdown } from '@/components/ThinkingDropdown';
+import { WorkflowModal } from '@/components/workflow';
 
 // Group messages to combine AI responses with their tool calls and results
 interface MessageGroup {
@@ -677,6 +678,19 @@ export function ChatMessagesView({
   // Graph state - used for future backend integration
   const [, setGraphs] = useState<Record<string, string> | null>(null);
   const [loadingGraphs, setLoadingGraphs] = useState(false);
+  // Workflow visualization state
+  const [showWorkflow, setShowWorkflow] = useState(false);
+
+  // Get the latest user query for workflow visualization
+  const getLatestUserQuery = useCallback((): string => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].type === 'human') {
+        const content = messages[i].content;
+        return typeof content === 'string' ? content : '';
+      }
+    }
+    return '';
+  }, [messages]);
 
   const handleCopy = async (text: string, messageId: string) => {
     try {
@@ -757,6 +771,19 @@ export function ChatMessagesView({
       {/* Action buttons - only show if we have messages and chatId */}
       {messages.length > 0 && currentChatId && (
         <div className="absolute top-4 right-4 z-10 flex gap-2">
+          {/* Workflow Visualization Button - only for Portfolio Strategist */}
+          {selectedAgentId === AgentId.PORTFOLIO_STRATEGIST && (
+            <Button
+              onClick={() => setShowWorkflow(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all font-bold"
+              title="View agent workflow visualization"
+            >
+              <GitBranch className="h-4 w-4 mr-2" />
+              Workflow
+            </Button>
+          )}
           <Button
             onClick={handleViewGraphs}
             variant="outline"
@@ -782,6 +809,14 @@ export function ChatMessagesView({
           )}
         </div>
       )}
+
+      {/* Workflow Visualization Modal */}
+      <WorkflowModal
+        currentQuery={getLatestUserQuery()}
+        isOpen={showWorkflow}
+        onClose={() => setShowWorkflow(false)}
+        autoplay={true}
+      />
 
       {/* Graphs Modal/Display */}
       {showGraphs && (
